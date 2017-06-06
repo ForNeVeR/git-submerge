@@ -15,7 +15,7 @@ like this:
 
 (Semicolons are gitlinks; we'll use slashes for merges.)
 
-After running `git submerge sub`, the history will look like this:
+After running `git submerge submodule`, the history will look like this:
 
     repository   A-B---D'-E'-F'--H'--------L'--N'----P'   master
                     \ / \       / \           /
