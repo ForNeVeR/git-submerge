@@ -8,18 +8,18 @@ Merge Git submodule into the repo, as if they've never been separate at all.
 Suppose you have a repo with a submodule. Their collective history might look
 like this:
 
-    repository   A-B----D-E-F----H-----L----N---P   master
+    repository   A-B----D-E-F----H-----K----M---O   master
                        ;        ;          ;
                       ;        ;          ;
-    submodule        C--------G----J-K---M----O     master
+    submodule        C--------G----I-J---L----N     master
 
 (Semicolons are gitlinks; we'll use slashes for merges.)
 
 After running `git submerge submodule`, the history will look like this:
 
-    repository   A-B---D'-E'-F'--H'--------L'--N'----P'   master
+    repository   A-B---D'-E'-F'--H'--------K'--M'----O'   master
                     \ / \       / \           /
-                     C'  ------G'  --J'-K'---M'---O'      sub-master
+                     C'  ------G'  --I'-J'---L'---N'      sub-master
 
 The following things happened:
 
@@ -27,10 +27,10 @@ The following things happened:
 
 * submodule's history became part of the repo's history;
 
-* where submodule updates were previously (commits D, H, N), we now have merge
+* where submodule updates were previously (commits D, H, M), we now have merge
   commits;
 
-* the yet-unmerged "tail" of the submodule history (commit O) is given its own
+* the yet-unmerged "tail" of the submodule history (commit N) is given its own
   branch so you can merge it yourself later.
 
 Just as any other kind of history rewriting, this operation changes the hashes
