@@ -56,100 +56,112 @@ Suppose the submodule is checked out into a directory called "sub".
 
         C'--G'--I'--J'--L'--N'
 
-2.  Starting with `O`, walks back into history to find the commit that added
-    the submodule (i.e. `D`), then takes its ancestor (`B`).
+    Guaranteed not to have conflicts because moving stuff doesn't introduce or
+    remove any changes.
 
-    If there are more than one ancestor, the tool will ask user which commit
-    they want to use.
+2.  Check out `D`. De-init the submodule, remove its directory. Create merge
+    commit with parents `B` and `C'`.
 
-3.  Rewritten history from step 1 is rebased onto the commit from step 2. At
-    this point it's helpful to start looking at the whole history:
+    (TODO: manually check if this is really possible and works as described.)
 
-                         C"-------G"---I"-J"---L"----N"
+    History at this point:
+
+                         C'-------G'---I'-J'---L'----N'
+                          \
+                         --D'
                         /
         repository   A-B----D-E-F----H-------K----M-----O   master
                            ;        ;            ;
                           ;        ;            ;
         submodule        C--------G----I--J----L-----N     master
 
-4.  Old and new submodule histories (`C..N` and `C"..N"`, respectively) are
-    walked in lockstep to learn the correspondence between old and new commit
-    IDs. (We humans see the link between `C` and `C"`; it's tougher for
-    computers who deal with SHA-1 hashes.)
+    Guaranteed not to have conflicts because:
 
-5.  Check out `D`. De-init the submodule, remove its directory. Create merge
-    commit with parents `B` and `C"`.
+    * `C'` is known to contain just submodule's directory;
 
-    We now have commit `D'`, which we'll call "tip". We'll also call `C"` as
-    "current submodule commit".
+    * `B` *might* contain submodule's directory, but D must've fixed this,
+      otherwise it couldn't add the submodule.
 
-    (TODO: manually check if this is really possible and works as described.)
 
-    History at this point:
-
-                         C"-------G"---I"-J"---L"----N"
-                        / \
-                       | --D'
-                       |/
+                         C'  -----G3---I3-J3---L3----N3
+                          \ /
+                         --D'
+                        /
         repository   A-B----D-E-F----H-------K----M-----O   master
                            ;        ;            ;
                           ;        ;            ;
         submodule        C--------G----I--J----L-----N     master
 
+    Guaranteed not to have conflicts because:
 
-                         C"  -----G3---I3-J3---L3----N3
-                        / \ /
-                       | --D'
-                       |/
+    * `G'` followed `C'` and changed just the submodule's subdirectory (the
+      latter is ensured because we've moved *everything* to submodule's
+      subdirectory on step 1);
+
+    * `D'` inherited its submodule's subdirectory from `C'`, so from `G'`'s
+      viewpoint, `D'` and `C'` are kinda the same.
+
+
+                         C'  ---------G3---I3-J3---L3----N3
+                          \ /
+                         --D'--E'--F'
+                        /
         repository   A-B----D-E-F----H-------K----M-----O   master
                            ;        ;            ;
                           ;        ;            ;
         submodule        C--------G----I--J----L-----N     master
 
+    Guaranteed to not have conflicts because:
 
-                         C"  ---------G3---I3-J3---L3----N3
-                        / \ /
-                       | --D'--E'--F'
-                       |/
+    * `E` followed `D` and changed everything *but* the submodule's
+      subdirectory (the latter is ensured by Git itself—changes to submodule's
+      contents would have been committed to the submodule itself, not to the
+      containing repo);
+
+    * `D'` contains the same stuff as `D` had, save for submodule's
+      subdirectory which `E` doesn't touch.
+
+    Same logic applies with `F` being cherry-picked onto `E'`.
+
+                         C'  ---------G3---I3-J3---L3----N3
+                          \ /          \
+                         --D'--E'--F'---H'
+                        /
         repository   A-B----D-E-F----H-------K----M-----O   master
                            ;        ;            ;
                           ;        ;            ;
         submodule        C--------G----I--J----L-----N     master
 
+    Guaranteed not to have conflicts because submodule's directory hasn't been
+    touched by `E'` and `F'` (see proofs above), and `G3` doesn't touch
+    anything else (so won't conflict with changes introduced by `E'` and `F'`).
 
-                         C"  ---------G3---I3-J3---L3----N3
-                        / \ /          \
-                       | --D'--E'--F'---H'
-                       |/
+
+                         C'  ---------G3  -I4-J4---L4----N4
+                          \ /          \ /
+                         --D'--E'--F'---H'
+                        /
         repository   A-B----D-E-F----H-------K----M-----O   master
                            ;        ;            ;
                           ;        ;            ;
         submodule        C--------G----I--J----L-----N     master
 
-
-                         C"  ---------G3  -I4-J4---L4----N4
-                        / \ /          \ /
-                       | --D'--E'--F'---H'
-                       |/
-        repository   A-B----D-E-F----H-------K----M-----O   master
-                           ;        ;            ;
-                          ;        ;            ;
-        submodule        C--------G----I--J----L-----N     master
-
+    Guaranteed not to have conflicts by the same logic as when we rebased `G3`
+    from `C'` onto `D'`.
 
         ...
 
 
-                         C"  ---------G3  -I4-J4----L4   -N5
-                        / \ /          \ /            \ /
-                       | --D'--E'--F'---H'-------K'----M'----O'
-                       |/
+                         C'  ---------G3  -I4-J4----L4   -N5
+                          \ /          \ /            \ /
+                         --D'--E'--F'---H'-------K'----M'----O'
+                        /
         repository   A-B----D-E-F----H-------K----M-----O   master
                            ;        ;            ;
                           ;        ;            ;
         submodule        C--------G----I--J----L-----N     master
 
 
-                         C"  ---------G3  -I4-J4----L4   -N5      sub-master
-                        / \ /          \ /            \ /
+                         C'  ---------G3  -I4-J4----L4   -N5      sub-master
+                          \ /          \ /            \ /
         repository   A-B---D'--E'--F'---H'-------K'----M'----O'   master
