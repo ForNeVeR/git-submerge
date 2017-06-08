@@ -51,6 +51,31 @@ Suppose the submodule is checked out into a directory called "sub".
 
 `git submerge` proceeds in the following way:
 
+0.  `git remote add sub ./sub && git fetch sub`
+1.  `git submodule status sub` shows SHA-1 of the tip of the submodule (with indicator showing if it has uncommitted changes).
+2.  `git branch sub-master b7301743fb1aee09d7dd6fda1a2d3e5dc0dfc79c` (the tip of the submodule)
+3.  `git filter-branch --tree-filter 'mkdir sub; git mv -k * .??* sub' sub-master`
+4.  `git checkout c47c102` (the commit before the one that added the submodule)
+5.  `git checkout -b submerged`
+6.  `git cherry-pick --no-commit 22b227e` (the commit that added the submodule)
+7.  Look up submodule's commit ID with `git submodule status sub` (59d859dc0fab7ba7ea6ecc400c48b8d307ea519f), find corresponding commit in rebased history (015ae65)
+7.  `git rm -rf sub` (`--force` is required because the directory is present in the index. This will remove the entry from the .gitmodules file, but won't remove the file itself even if it's empty)
+8.  `[ -e .gitmodules -a ! -s .gitmodules ] && git rm -f .gitmodules` (remove the file if it's empty)
+9.  Problem: replace a commit adding the submodule by a commit merging the head of submodule's rebased history into current branch.
+
+    What I tried:
+
+    ```
+    git cherry-pick 22b227e
+    git rm -r sub
+    [ -e .gitmodules -a ! -s .gitmodules ] && git rm -f .gitmodules
+    git ci --amend --allow-empty
+    git merge --allow-unrelated --no-commit 015ae65
+    git ci --amend
+    ```
+
+    Got: `fatal: You are in the middle of a merge -- cannot amend.`
+
 1.  Rewrites submodule history, moving all files into a directory called "sub".
     This yields the following history:
 
