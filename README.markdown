@@ -76,6 +76,18 @@ Suppose the submodule is checked out into a directory called "sub".
 
     Got: `fatal: You are in the middle of a merge -- cannot amend.`
 
+10. Problem: `cherry-pick`ing produces different hashes on different invocations (probably because Committer Date is changing)
+
+
+Current (20170610) idea:
+    1. Run filter-branch on sub's master branch to move everything under sub/.
+    2. Walk over the repo's master, note down commit IDs where sub/ is touched and which sub's commit IDs are used.
+    3. Walk old and new sub's histories in lockstep, fill out the previous list with new commit IDs. We now have a mapping between old and new commit IDs.
+    4. Run filter-branch over repo's master, with two filters:
+        tree-filter that `rm -rf sub` if it's updated;
+        parent-filter that adds new sub's commit ID as a parent to every commit where sub was updated.
+
+
 1.  Rewrites submodule history, moving all files into a directory called "sub".
     This yields the following history:
 
