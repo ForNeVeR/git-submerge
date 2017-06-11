@@ -56,6 +56,10 @@ git filter-branch -f \
 
 `tfilter` and `pfilter` scripts can be found in the root of this repo.
 
+TODO: replace tree-filter with index-filter. Right now tree-filter is required
+because we use `git-checkout` there, but we could use `git update-index
+--cacheinfo` instead.
+
 How it works
 ============
 
