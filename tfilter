@@ -1,0 +1,45 @@
+#!/bin/sh
+
+git rm -rf sub
+[ -e .gitmodules -a ! -s .gitmodules ] && git rm -f .gitmodules
+true
+
+case $GIT_COMMIT in
+    "34e2c17327a8bcba5f89f08620feb491d84108d9")
+        git checkout -f 13ce574f35b81f2a8c62c72f29d3c899810060c8 -- sub
+        ;;
+    "69a1d58fd52a419c4fffad53f090e8d9f238f985")
+        git checkout -f 13ce574f35b81f2a8c62c72f29d3c899810060c8 -- sub
+        ;;
+
+
+    "c3437db32de4ef8b511abf2c2102d49f0f8e47ce")
+        git checkout -f 0b2dfe3fded87d9b28397d90cbdc7afbea03443f -- sub
+        ;;
+    "7d27fee809eaa4b3d147e90f2423618688d7c56a")
+        git checkout -f 0b2dfe3fded87d9b28397d90cbdc7afbea03443f -- sub
+        ;;
+    "763c737e6c9e0b29da05a1972fbc461c0cf7bbcb")
+        git checkout -f 0b2dfe3fded87d9b28397d90cbdc7afbea03443f -- sub
+        ;;
+    "2823f42ef8f51f09b499198f65488fd949784d2e")
+        git checkout -f 0b2dfe3fded87d9b28397d90cbdc7afbea03443f -- sub
+        ;;
+
+
+    "b8d91c6ca6cf6ebbc57e759e19f6b1fbdb11a709")
+        git checkout -f 015ae650bf23eb70eca6bd43a6fef314f4bb7114 -- sub
+        ;;
+    "e6140e79cdaf036365a8d2015919cbc5ec96fdc1")
+        git checkout -f 015ae650bf23eb70eca6bd43a6fef314f4bb7114 -- sub
+        ;;
+    "51e314e7f813a1d44f6ba27eb2cf4b5123c10846")
+        git checkout -f 015ae650bf23eb70eca6bd43a6fef314f4bb7114 -- sub
+        ;;
+    "6af1aa6b806977107e1c7ddb456391a45efabffd")
+        git checkout -f 015ae650bf23eb70eca6bd43a6fef314f4bb7114 -- sub
+        ;;
+    "22b227eddefda3ad7e16a470ab86a761154ef13e")
+        git checkout -f 015ae650bf23eb70eca6bd43a6fef314f4bb7114 -- sub
+        ;;
+esac

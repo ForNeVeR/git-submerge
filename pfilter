@@ -1,0 +1,23 @@
+#!/bin/sh
+
+read parents
+
+case $GIT_COMMIT in
+    "22b227eddefda3ad7e16a470ab86a761154ef13e")
+        echo $parents -p 015ae650bf23eb70eca6bd43a6fef314f4bb7114
+        ;;
+
+    "2823f42ef8f51f09b499198f65488fd949784d2e")
+        echo $parents -p 0b2dfe3fded87d9b28397d90cbdc7afbea03443f
+        ;;
+
+    "69a1d58fd52a419c4fffad53f090e8d9f238f985")
+        echo $parents -p 13ce574f35b81f2a8c62c72f29d3c899810060c8
+        ;;
+
+    *)
+        echo $parents
+        ;;
+esac
+
+

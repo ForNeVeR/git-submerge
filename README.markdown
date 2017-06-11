@@ -37,6 +37,25 @@ Just as any other kind of history rewriting, this operation changes the hashes
 of the commits, so you shouldn't run it on published histories.
 
 
+Proof-of-concept experiments
+============================
+
+I created two repositories: `git` and `sub`. `sub` was included into `git` as
+a submodule. I made a dozen of commits in each. You can find `git`'s and
+`sub`'s histories in this repo, under tags `poc-repo` and `poc-submodule`,
+respectively.
+
+To rewrite histories, I checked out `master` in `git` and ran the following:
+
+```
+git filter-branch -f \
+    --tree-filter $PWD/tfilter \
+    --parent-filter $PWD/pfilter \
+    '22b227e^..'
+```
+
+`tfilter` and `pfilter` scripts can be found in the root of this repo.
+
 How it works
 ============
 
