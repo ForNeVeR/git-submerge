@@ -1,0 +1,6 @@
+[package]
+name = "git-submerge"
+version = "0.1.0"
+authors = ["Alexander Batischev <eual.jp@gmail.com>"]
+
+[dependencies]
