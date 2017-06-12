@@ -4,6 +4,8 @@ extern crate git2;
 use git2::Repository;
 use clap::{Arg, App};
 
+const E_NO_GIT_REPO : i32 = 1;
+
 fn main() {
     let options = App::new("git-submerge")
                           .version("0.1")
@@ -21,6 +23,9 @@ fn main() {
 
     let repo = match Repository::open(".") {
         Ok(repo) => repo,
-        Err(e) => panic!("failed to open the repository in the current directory: {}", e),
+        Err(e) => {
+            eprintln!("Couldn't find Git repo in the current directory: {}", e.message());
+            std::process::exit(E_NO_GIT_REPO);
+        },
     };
 }
