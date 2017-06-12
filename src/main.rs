@@ -16,10 +16,10 @@ fn main() {
                                .required(true)
                                .index(1))
                           .get_matches();
-    match options.value_of("SUBMODULE_DIR") {
-        Some(submodule_dir) => println!("Merging {}...", submodule_dir),
-        None => panic!("no submodule name specified!"),
-    };
+    // We can safely use unwrap() here because if the option is empty, Clap would've already shown
+    // the error message and aborted.
+    let submodule_dir = options.value_of("SUBMODULE_DIR").unwrap();
+    println!("Merging {}...", submodule_dir);
 
     let repo = match Repository::open(".") {
         Ok(repo) => repo,
