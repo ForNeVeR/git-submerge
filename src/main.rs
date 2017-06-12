@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate git2;
 
-use git2::Repository;
+use git2::{Repository, Remote, Error};
 use clap::{Arg, App};
 
 const E_NO_GIT_REPO : i32 = 1;
@@ -30,6 +30,7 @@ fn main() {
     };
 
     // 1. Add submodule as a remote
+    let remote = add_remote(&repo, submodule_dir).unwrap();
     // 2. Fetch submodule's history
     // 3. Check out submodule's branch under some unique name (UUID?)
     // 4. Rewrite submodule branch's history, moving everything under a single directory named
@@ -43,4 +44,10 @@ fn main() {
     //      8.1 updating the tree to contain the relevant tree from submodule
     //      8.2 in commits that used to update the submodule, add a parent pointing to appropriate
     //          commit in new submodule history
+}
+
+fn add_remote<'a>(repo : &'a Repository, submodule_name : &str) -> Result<Remote<'a>, Error> {
+    // TODO: randomize remote's name or at least check that it doesn't exist already
+    let url = String::from("./") + submodule_name;
+    repo.remote(submodule_name, &url)
 }
