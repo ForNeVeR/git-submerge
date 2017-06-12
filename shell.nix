@@ -15,6 +15,7 @@ in rec {
       pkgs.libssh2
       pkgs.libgit2
       pkgs.cmake
+      pkgs.zlib
     ];
   };
 }
