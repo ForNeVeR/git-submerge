@@ -28,4 +28,19 @@ fn main() {
             std::process::exit(E_NO_GIT_REPO);
         },
     };
+
+    // 1. Add submodule as a remote
+    // 2. Fetch submodule's history
+    // 3. Check out submodule's branch under some unique name (UUID?)
+    // 4. Rewrite submodule branch's history, moving everything under a single directory named
+    //    after the submodule
+    // 5. Run through main branch's history and note down commit IDs where submodule was touched,
+    //    along with submodule's commit ID
+    // 6. Run through old and new submodule's history (in lockstep) and note down new commit IDs of
+    //    the commits that were referenced in the main repo
+    // 7. Remove submodule's remote
+    // 8. Run through master's history, doing two things:
+    //      8.1 updating the tree to contain the relevant tree from submodule
+    //      8.2 in commits that used to update the submodule, add a parent pointing to appropriate
+    //          commit in new submodule history
 }
