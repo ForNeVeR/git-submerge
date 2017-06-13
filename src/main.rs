@@ -30,7 +30,7 @@ fn main() {
     };
 
     // 1. Add submodule as a remote
-    let mut remote = add_remote(&repo, submodule_dir).unwrap();
+    let mut remote = add_remote(&repo, submodule_dir).expect("Couldn't add a remote");
     // 2. Fetch submodule's history
     remote.fetch(&[], None, None);
     // 3. Check out submodule's branch under some unique name (UUID?)
