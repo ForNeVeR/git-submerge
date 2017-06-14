@@ -33,7 +33,7 @@ fn main() {
     // 1. Add submodule as a remote
     let mut remote = add_remote(&repo, submodule_dir).expect("Couldn't add a remote");
     // 2. Fetch submodule's history
-    remote.fetch(&[], None, None);
+    remote.fetch(&[], None, None).expect("Couldn't fetch submodule's history");
     // 3. Find out submodule's HEAD commit id
     let submodules = repo.submodules().expect("Couldn't obtain a list of submodules");
     let submodule_path = Path::new(submodule_dir);
