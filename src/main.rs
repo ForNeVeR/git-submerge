@@ -34,25 +34,13 @@ fn main() {
     let mut remote = add_remote(&repo, submodule_dir).expect("Couldn't add a remote");
     // 2. Fetch submodule's history
     remote.fetch(&[], None, None);
-    // 3. Check out submodule's branch under some unique name (UUID?)
+    // 3. Find out submodule's HEAD commit id
     let submodules = repo.submodules().expect("Couldn't obtain a list of submodules");
     let submodule_path = Path::new(submodule_dir);
     let submodule = submodules.iter().find(|s| s.path() == submodule_path)
         .expect("Couldn't find the submodule with expected path");
     let submodule_head = submodule.head_id()
         .expect("Couldn't obtain submodule's HEAD");
-    let submodule_head_commit = repo.find_commit(submodule_head)
-        .expect("Couldn't find the commit with submodule's HEAD");
-    let submodule_branch_original =
-        repo.branch("submerged/submodule-original",
-                    &submodule_head_commit,
-                    false)
-        .expect("Couldn't check out submodule's HEAD under submerged/submodule-original");
-    let submodule_branch =
-        repo.branch("submerged/submodule-rewritten",
-                    &submodule_head_commit,
-                    false)
-        .expect("Couldn't check out submodule's HEAD under submerged/submodule-rewritten");
     // 4. Rewrite submodule branch's history, moving everything under a single directory named
     //    after the submodule
     // 5. Run through main branch's history and note down commit IDs where submodule was touched,
