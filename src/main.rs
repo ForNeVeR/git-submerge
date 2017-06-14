@@ -4,6 +4,7 @@ extern crate git2;
 use git2::{Repository, Remote, Error};
 use clap::{Arg, App};
 use std::path::Path;
+use std::collections::HashMap;
 
 const E_NO_GIT_REPO : i32 = 1;
 
@@ -43,6 +44,27 @@ fn main() {
         .expect("Couldn't obtain submodule's HEAD");
     // 4. Rewrite submodule branch's history, moving everything under a single directory named
     //    after the submodule
+    let mut revwalk = repo.revwalk().expect("Couldn't obtain RevWalk object for the repo");
+    revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
+    revwalk.push(submodule_head).expect("Couldn't add submodule's HEAD to RevWalk list");
+
+    let mut old_id_to_new = HashMap::new();
+
+    for maybe_oid in revwalk {
+        match maybe_oid {
+            Ok(oid) => {
+                // 4.1. Extract the tree
+                // 4.2. Obtain the new tree, where everything from the old one is moved under
+                //   a directory named after the submodule
+                // 4.3. Create new commit with the new tree
+                // 4.4. Update the map with the new commit's ID
+                println!("{:?}", oid);
+                old_id_to_new.insert(oid, oid);
+            },
+            Err(e) =>
+                eprintln!("Error walking the submodule's history: {:?}", e),
+        }
+    };
     // 5. Run through main branch's history and note down commit IDs where submodule was touched,
     //    along with submodule's commit ID
     // 6. Run through old and new submodule's history (in lockstep) and note down new commit IDs of
