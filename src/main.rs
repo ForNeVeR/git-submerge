@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate git2;
 
-use git2::{Repository, Remote, Error};
+use git2::{Repository, Remote, Error, Index};
 use clap::{Arg, App};
 use std::path::Path;
 use std::collections::HashMap;
@@ -53,12 +53,27 @@ fn main() {
     for maybe_oid in revwalk {
         match maybe_oid {
             Ok(oid) => {
+                println!("{:?}", oid);
                 // 4.1. Extract the tree
+                let commit = repo.find_commit(oid).expect(&format!("Couldn't get a commit with ID {}", oid));
+                let tree = commit.tree().expect(&format!("Couldn't obtain the tree of a commit with ID {}", oid));
+                let mut old_index = Index::new().expect("Couldn't create an in-memory index for commit");
+                let mut new_index = Index::new().expect("Couldn't create an in-memory index");
+                old_index.read_tree(&tree).expect(&format!("Couldn't read the commit {} into index", oid));
                 // 4.2. Obtain the new tree, where everything from the old one is moved under
                 //   a directory named after the submodule
-                // 4.3. Create new commit with the new tree
-                // 4.4. Update the map with the new commit's ID
-                println!("{:?}", oid);
+                for entry in old_index.iter() {
+                    let mut new_entry = entry;
+
+                    let mut new_path = String::from(submodule_dir);
+                    new_path += "/";
+                    new_path += &String::from_utf8(new_entry.path).expect("Failed to convert a path to str");
+
+                    new_entry.path = new_path.into_bytes();
+                    new_index.add(&new_entry);
+                }
+                // 4.3. TODO: Create new commit with the new tree
+                // 4.4. TODO: Update the map with the new commit's ID
                 old_id_to_new.insert(oid, oid);
             },
             Err(e) =>
