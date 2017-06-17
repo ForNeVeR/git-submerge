@@ -103,10 +103,6 @@ fn main() {
                 eprintln!("Error walking the submodule's history: {:?}", e),
         }
     };
-    // 5. Run through main branch's history and note down commit IDs where submodule was touched,
-    //    along with submodule's commit ID
-    // 6. Run through old and new submodule's history (in lockstep) and note down new commit IDs of
-    //    the commits that were referenced in the main repo
     // 7. Remove submodule's remote
     // 8. Run through master's history, doing two things:
     //      8.1 updating the tree to contain the relevant tree from submodule
