@@ -104,6 +104,7 @@ fn main() {
         }
     };
     // 7. Remove submodule's remote
+    repo.remote_delete(submodule_dir).expect("Couldn't remove submodule's remote");
     // 8. Run through master's history, doing two things:
     //      8.1 updating the tree to contain the relevant tree from submodule
     //      8.2 in commits that used to update the submodule, add a parent pointing to appropriate
