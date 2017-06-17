@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate git2;
 
-use git2::{Repository, Remote, Error, Index};
+use git2::{Repository, Remote, Error, Index, Commit};
 use clap::{Arg, App};
 use std::path::Path;
 use std::collections::HashMap;
@@ -53,7 +53,6 @@ fn main() {
     for maybe_oid in revwalk {
         match maybe_oid {
             Ok(oid) => {
-                println!("{:?}", oid);
                 // 4.1. Extract the tree
                 let commit = repo.find_commit(oid).expect(&format!("Couldn't get a commit with ID {}", oid));
                 let tree = commit.tree().expect(&format!("Couldn't obtain the tree of a commit with ID {}", oid));
@@ -70,11 +69,35 @@ fn main() {
                     new_path += &String::from_utf8(new_entry.path).expect("Failed to convert a path to str");
 
                     new_entry.path = new_path.into_bytes();
-                    new_index.add(&new_entry);
+                    new_index.add(&new_entry).expect("Couldn't add an entry to the index");
                 }
+                let tree_id = new_index.write_tree_to(&repo).expect("Couldn't write the index into a tree");
+                let tree = repo.find_tree(tree_id).expect("Couldn't retrieve the tree we just created");
                 // 4.3. TODO: Create new commit with the new tree
+                let parents = {
+                    let mut p: Vec<Commit> = Vec::new();
+                    for parent_id in commit.parent_ids() {
+                        let new_parent_id = old_id_to_new[&parent_id];
+                        let parent = repo.find_commit(new_parent_id).expect("Couldn't find parent commit by its id");
+                        p.push(parent);
+                    };
+                    p
+                };
+
+                let mut parents_refs: Vec<&Commit> = Vec::new();
+                for i in 0 .. parents.len() {
+                    parents_refs.push(&parents[i]);
+                }
+                let new_commit_id = repo.commit(
+                    None,
+                    &commit.author(),
+                    &commit.committer(),
+                    &commit.message().expect("Couldn't retrieve commit's message"),
+                    &tree,
+                    &parents_refs[..])
+                    .expect("Failed to commit");
                 // 4.4. TODO: Update the map with the new commit's ID
-                old_id_to_new.insert(oid, oid);
+                old_id_to_new.insert(oid, new_commit_id);
             },
             Err(e) =>
                 eprintln!("Error walking the submodule's history: {:?}", e),
