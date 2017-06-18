@@ -152,6 +152,7 @@ fn main() {
                 let new_submodule_commit_id = old_id_to_new[&submodule_commit_id];
                 let submodule_commit = repo.find_commit(new_submodule_commit_id).expect("Couldn't obtain submodule's commit");
                 let subtree_id = submodule_commit.tree()
+                    .and_then(|t| t.get_path(submodule_path))
                     .and_then(|te| Ok(te.id()))
                     .expect("Couldn't obtain submodule's subtree ID");
 
