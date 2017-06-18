@@ -14,3 +14,6 @@
 * Figure out how .gitignore in subdirectories is processed. Can we somehow
   merge it with the one that's in the main repo?
 * Make sure the workdir is in clean state before doing anything
+* Make sure we only use expect() for errors that users should report back to
+  us. Everything that users might try to fix themselves should be reported in
+  a friendlier manner.
