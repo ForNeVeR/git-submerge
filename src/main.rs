@@ -18,6 +18,7 @@ fn real_main() -> i32 {
     let options = App::new("git-submerge")
                           .version("0.1")
                           .author("Alexander Batischev <eual.jp@gmail.com>")
+                          // TODO: get this in synch with Cargo.toml and README
                           .about("Merges git submodule into the repo as if it was that way from the start")
                           .arg(Arg::with_name("SUBMODULE_DIR")
                                .help("The submodule to merge")
