@@ -32,6 +32,8 @@ fn main() {
         },
     };
 
+    // TODO: make sure repo.state() returns RepositoryState::Clean
+
     // 1. Add submodule as a remote
     let mut remote = add_remote(&repo, submodule_dir).expect("Couldn't add a remote");
     // 2. Fetch submodule's history
@@ -39,6 +41,7 @@ fn main() {
     // 3. Find out submodule's HEAD commit id
     let submodules = repo.submodules().expect("Couldn't obtain a list of submodules");
     let submodule_path = Path::new(submodule_dir);
+    // TODO: use repo.find_submodule() here
     let submodule = submodules.iter().find(|s| s.path() == submodule_path)
         .expect("Couldn't find the submodule with expected path");
     let submodule_head = submodule.head_id()
@@ -257,6 +260,7 @@ fn main() {
 
 fn add_remote<'a>(repo : &'a Repository, submodule_name : &str) -> Result<Remote<'a>, Error> {
     // TODO: randomize remote's name or at least check that it doesn't exist already
+    // Maybe use remote_anonymous()
     let url = String::from("./") + submodule_name;
     repo.remote(submodule_name, &url)
 }
