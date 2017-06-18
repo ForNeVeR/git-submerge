@@ -207,7 +207,7 @@ fn main() {
                 // o--o--o--A--
                 //             `,-B
                 //  o--o--o--B-
-                let submodule_updated: bool = !parent_subtree_ids.contains(&subtree_id);
+                let submodule_updated: bool = !parent_subtree_ids.contains(&submodule_commit_id);
 
                 // TODO: rewrite the parents if the submodule was updated
                 let parents = {
@@ -251,6 +251,8 @@ fn main() {
     let current_id = reference.target().expect("Couldn't resolve current reference to ID");
     let updated_id = old_id_to_new[&current_id];
     reference.set_target(updated_id, &format!("git-submerge reset {} to rewritten history", current_ref)).expect("Couldn't update current reference to point to revritten history");
+
+    // TODO: reset working directory to match new HEAD
 }
 
 fn add_remote<'a>(repo : &'a Repository, submodule_name : &str) -> Result<Remote<'a>, Error> {
