@@ -10,6 +10,11 @@ use std::collections::{HashMap, HashSet};
 const E_NO_GIT_REPO : i32 = 1;
 
 fn main() {
+    let exit_code = real_main();
+    std::process::exit(exit_code);
+}
+
+fn real_main() -> i32 {
     let options = App::new("git-submerge")
                           .version("0.1")
                           .author("Alexander Batischev <eual.jp@gmail.com>")
@@ -28,7 +33,7 @@ fn main() {
         Ok(repo) => repo,
         Err(e) => {
             eprintln!("Couldn't find Git repo in the current directory: {}", e.message());
-            std::process::exit(E_NO_GIT_REPO);
+            return E_NO_GIT_REPO;
         },
     };
 
@@ -254,6 +259,8 @@ fn main() {
     let updated_id = old_id_to_new[&head_id];
     let object = repo.find_object(updated_id, None).expect("Couldn't look up an object at which HEAD points");
     repo.reset(&object, git2::ResetType::Hard, Some(&mut checkoutbuilder)).expect("Couldn't run force-reset");
+
+    0 // An exit code indicating success
 }
 
 fn add_remote<'a>(repo : &'a Repository, submodule_name : &str) -> Result<Remote<'a>, Error> {
