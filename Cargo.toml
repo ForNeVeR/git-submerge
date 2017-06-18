@@ -2,6 +2,7 @@
 name = "git-submerge"
 version = "0.1.0"
 authors = ["Alexander Batischev <eual.jp@gmail.com>"]
+license = "BSD-3-Clause"
 
 [dependencies]
 git2 = "0.6.6"

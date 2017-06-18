@@ -1,4 +1,3 @@
-* Add license
 * Signed commits can't be rewritten as easily. What to do about them?
     * Presumably we're rewriting an unpublished history, so this isn't much of
       a problem—a person doing the rewriting can just sign the resulting
