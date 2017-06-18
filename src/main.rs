@@ -2,6 +2,7 @@ extern crate clap;
 extern crate git2;
 
 use git2::{Repository, Remote, Error, Index, Commit};
+use git2::build::CheckoutBuilder;
 use clap::{Arg, App};
 use std::path::Path;
 use std::collections::{HashMap, HashSet};
@@ -209,7 +210,7 @@ fn main() {
                 //  o--o--o--B-
                 let submodule_updated: bool = !parent_subtree_ids.contains(&submodule_commit_id);
 
-                // TODO: rewrite the parents if the submodule was updated
+                // rewrite the parents if the submodule was updated
                 let parents = {
                     let mut p: Vec<Commit> = Vec::new();
                     for parent_id in commit.parent_ids() {
@@ -245,14 +246,13 @@ fn main() {
         }
     };
 
-    let head = repo.head().expect("Couldn't obtain current repo's HEAD");
-    let current_ref = head.name().expect("Couldn't obtain the name HEAD points to");
-    let mut reference = repo.find_reference(current_ref).expect("Couldn't find the reference HEAD points to");
-    let current_id = reference.target().expect("Couldn't resolve current reference to ID");
-    let updated_id = old_id_to_new[&current_id];
-    reference.set_target(updated_id, &format!("git-submerge reset {} to rewritten history", current_ref)).expect("Couldn't update current reference to point to revritten history");
+    // It's safe to do force-reset because we checked at the beginning and the repo was clean
+    let mut checkoutbuilder = CheckoutBuilder::new();
+    checkoutbuilder.force();
 
-    // TODO: reset working directory to match new HEAD
+    let updated_id = old_id_to_new[&head_id];
+    let object = repo.find_object(updated_id, None).expect("Couldn't look up an object at which HEAD points");
+    repo.reset(&object, git2::ResetType::Hard, Some(&mut checkoutbuilder)).expect("Couldn't run force-reset");
 }
 
 fn add_remote<'a>(repo : &'a Repository, submodule_name : &str) -> Result<Remote<'a>, Error> {
