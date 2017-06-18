@@ -32,8 +32,6 @@ fn main() {
         },
     };
 
-    // TODO: make sure repo.state() returns RepositoryState::Clean
-
     // 1. Add submodule as a remote
     let mut remote = add_remote(&repo, submodule_dir).expect("Couldn't add a remote");
     // 2. Fetch submodule's history

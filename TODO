@@ -13,3 +13,4 @@
   submodule
 * Figure out how .gitignore in subdirectories is processed. Can we somehow
   merge it with the one that's in the main repo?
+* Make sure the workdir is in clean state before doing anything
