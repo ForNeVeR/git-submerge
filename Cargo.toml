@@ -1,7 +1,10 @@
 [package]
 name = "git-submerge"
+description = "Merges Git submodule into the repo, as if they've never been separate at all"
 version = "0.1.0"
 authors = ["Alexander Batischev <eual.jp@gmail.com>"]
+repository = "https://github.com/Minoru/git-submerge"
+readme = "README.markdown"
 license = "BSD-3-Clause"
 
 [dependencies]
