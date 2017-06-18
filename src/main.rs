@@ -43,10 +43,8 @@ fn real_main() -> i32 {
     // 2. Fetch submodule's history
     remote.fetch(&[], None, None).expect("Couldn't fetch submodule's history");
     // 3. Find out submodule's HEAD commit id
-    let submodules = repo.submodules().expect("Couldn't obtain a list of submodules");
     let submodule_path = Path::new(submodule_dir);
-    // TODO: use repo.find_submodule() here
-    let submodule = submodules.iter().find(|s| s.path() == submodule_path)
+    let submodule = repo.find_submodule(&submodule_dir)
         .expect("Couldn't find the submodule with expected path");
     let submodule_head = submodule.head_id()
         .expect("Couldn't obtain submodule's HEAD");
