@@ -51,7 +51,7 @@ fn real_main() -> i32 {
     // 4. Rewrite submodule branch's history, moving everything under a single directory named
     //    after the submodule
     let mut revwalk = repo.revwalk().expect("Couldn't obtain RevWalk object for the repo");
-    // TODO: make sure "topological" here means "parents are always visited before their children".
+    // "Topological" and reverse means "parents are always visited before their children".
     // We need that in order to be sure that our old-to-new-ids map always contains everything we
     // need it to contain.
     revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
