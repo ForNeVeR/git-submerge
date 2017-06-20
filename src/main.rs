@@ -45,7 +45,6 @@ fn real_main() -> i32 {
     // 2. Fetch submodule's history
     remote.fetch(&[], None, None).expect("Couldn't fetch submodule's history");
     // 3. Find out submodule's HEAD commit id
-    let submodule_path = Path::new(submodule_dir);
     let submodule = repo.find_submodule(&submodule_dir)
         .expect("Couldn't find the submodule with expected path");
     let submodule_head = submodule.head_id()
@@ -63,9 +62,131 @@ fn real_main() -> i32 {
     // 7. Remove submodule's remote
     repo.remote_delete(submodule_dir).expect("Couldn't remove submodule's remote");
     // 8. Run through master's history, doing two things:
-    let repo_revwalk = get_repo_revwalk(&repo);
+    let mut repo_revwalk = get_repo_revwalk(&repo);
 
-    for maybe_oid in repo_revwalk {
+    rewrite_repo_history(&repo, &mut repo_revwalk, &mut old_id_to_new, &submodule_dir);
+
+    // It's safe to do force-reset because we checked at the beginning and the repo was clean
+    let mut checkoutbuilder = CheckoutBuilder::new();
+    checkoutbuilder.force();
+
+    let head = repo.head().expect("Couldn't obtain repo's HEAD");
+    let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
+    let updated_id = old_id_to_new[&head_id];
+    let object = repo.find_object(updated_id, None)
+        .expect("Couldn't look up an object at which HEAD points");
+    repo.reset(&object, git2::ResetType::Hard, Some(&mut checkoutbuilder))
+        .expect("Couldn't run force-reset");
+
+    0 // An exit code indicating success
+}
+
+fn add_remote<'a>(repo: &'a Repository, submodule_name: &str) -> Result<Remote<'a>, Error> {
+    // TODO: randomize remote's name or at least check that it doesn't exist already
+    // Maybe use remote_anonymous()
+    let url = String::from("./") + submodule_name;
+    repo.remote(submodule_name, &url)
+}
+
+fn get_submodule_revwalk<'repo>(repo: &'repo git2::Repository,
+                                submodule_head: &git2::Oid)
+                                -> git2::Revwalk<'repo> {
+    let mut revwalk = repo.revwalk().expect("Couldn't obtain RevWalk object for the repo");
+    // "Topological" and reverse means "parents are always visited before their children".
+    // We need that in order to be sure that our old-to-new-ids map always contains everything we
+    // need it to contain.
+    revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
+    // TODO: push all branches and tags, not just HEAD
+    revwalk.push(*submodule_head).expect("Couldn't add submodule's HEAD to RevWalk list");
+
+    revwalk
+}
+
+fn rewrite_submodule_history(repo: &git2::Repository,
+                             revwalk: &mut git2::Revwalk,
+                             old_id_to_new: &mut HashMap<git2::Oid, git2::Oid>,
+                             submodule_dir: &str) {
+    for maybe_oid in revwalk {
+        match maybe_oid {
+            Ok(oid) => {
+                // 4.1. Extract the tree
+                let commit = repo.find_commit(oid)
+                    .expect(&format!("Couldn't get a commit with ID {}", oid));
+                let tree = commit.tree()
+                    .expect(&format!("Couldn't obtain the tree of a commit with ID {}", oid));
+                let mut old_index = Index::new()
+                    .expect("Couldn't create an in-memory index for commit");
+                let mut new_index = Index::new().expect("Couldn't create an in-memory index");
+                old_index.read_tree(&tree)
+                    .expect(&format!("Couldn't read the commit {} into index", oid));
+                // 4.2. Obtain the new tree, where everything from the old one is moved under
+                //   a directory named after the submodule
+                for entry in old_index.iter() {
+                    let mut new_entry = entry;
+
+                    // TODO: what mode, owner, mtime etc. does the newly created dir get?
+                    let mut new_path = String::from(submodule_dir);
+                    new_path += "/";
+                    new_path += &String::from_utf8(new_entry.path)
+                        .expect("Failed to convert a path to str");
+
+                    new_entry.path = new_path.into_bytes();
+                    new_index.add(&new_entry).expect("Couldn't add an entry to the index");
+                }
+                let tree_id = new_index.write_tree_to(&repo)
+                    .expect("Couldn't write the index into a tree");
+                old_id_to_new.insert(tree.id(), tree_id);
+                let tree = repo.find_tree(tree_id)
+                    .expect("Couldn't retrieve the tree we just created");
+                // 4.3. Create new commit with the new tree
+                let parents = {
+                    let mut p: Vec<Commit> = Vec::new();
+                    for parent_id in commit.parent_ids() {
+                        let new_parent_id = old_id_to_new[&parent_id];
+                        let parent = repo.find_commit(new_parent_id)
+                            .expect("Couldn't find parent commit by its id");
+                        p.push(parent);
+                    }
+                    p
+                };
+
+                let mut parents_refs: Vec<&Commit> = Vec::new();
+                for i in 0..parents.len() {
+                    parents_refs.push(&parents[i]);
+                }
+                let new_commit_id = repo.commit(None,
+                            &commit.author(),
+                            &commit.committer(),
+                            &commit.message().expect("Couldn't retrieve commit's message"),
+                            &tree,
+                            &parents_refs[..])
+                    .expect("Failed to commit");
+                // 4.4. Update the map with the new commit's ID
+                old_id_to_new.insert(oid, new_commit_id);
+            }
+            Err(e) => eprintln!("Error walking the submodule's history: {:?}", e),
+        }
+    }
+}
+
+fn get_repo_revwalk<'repo>(repo: &'repo git2::Repository) -> git2::Revwalk<'repo> {
+    let mut revwalk = repo.revwalk().expect("Couldn't obtain RevWalk object for the repo");
+    revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
+    let head = repo.head().expect("Couldn't obtain repo's HEAD");
+    let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
+    // TODO: push all branches and tags, not just HEAD
+    revwalk.push(head_id).expect("Couldn't add repo's HEAD to RevWalk list");
+
+    revwalk
+}
+
+fn rewrite_repo_history(repo: &git2::Repository,
+                        revwalk: &mut git2::Revwalk,
+                        old_id_to_new: &mut HashMap<git2::Oid, git2::Oid>,
+                        submodule_dir: &str) {
+    let submodule_path = Path::new(submodule_dir);
+
+    for maybe_oid in revwalk {
         match maybe_oid {
             Ok(oid) => {
                 // 8.1 updating the tree to contain the relevant tree from submodule
@@ -196,117 +317,4 @@ fn real_main() -> i32 {
             Err(e) => eprintln!("Error walking the submodule's history: {:?}", e),
         }
     }
-
-    // It's safe to do force-reset because we checked at the beginning and the repo was clean
-    let mut checkoutbuilder = CheckoutBuilder::new();
-    checkoutbuilder.force();
-
-    let head = repo.head().expect("Couldn't obtain repo's HEAD");
-    let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
-    let updated_id = old_id_to_new[&head_id];
-    let object = repo.find_object(updated_id, None)
-        .expect("Couldn't look up an object at which HEAD points");
-    repo.reset(&object, git2::ResetType::Hard, Some(&mut checkoutbuilder))
-        .expect("Couldn't run force-reset");
-
-    0 // An exit code indicating success
-}
-
-fn add_remote<'a>(repo: &'a Repository, submodule_name: &str) -> Result<Remote<'a>, Error> {
-    // TODO: randomize remote's name or at least check that it doesn't exist already
-    // Maybe use remote_anonymous()
-    let url = String::from("./") + submodule_name;
-    repo.remote(submodule_name, &url)
-}
-
-fn get_submodule_revwalk<'repo>(repo: &'repo git2::Repository,
-                                submodule_head: &git2::Oid)
-                                -> git2::Revwalk<'repo> {
-    let mut revwalk = repo.revwalk().expect("Couldn't obtain RevWalk object for the repo");
-    // "Topological" and reverse means "parents are always visited before their children".
-    // We need that in order to be sure that our old-to-new-ids map always contains everything we
-    // need it to contain.
-    revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
-    // TODO: push all branches and tags, not just HEAD
-    revwalk.push(*submodule_head).expect("Couldn't add submodule's HEAD to RevWalk list");
-
-    revwalk
-}
-
-fn rewrite_submodule_history(repo: &git2::Repository,
-                             revwalk: &mut git2::Revwalk,
-                             old_id_to_new: &mut HashMap<git2::Oid, git2::Oid>,
-                             submodule_dir: &str) {
-    for maybe_oid in revwalk {
-        match maybe_oid {
-            Ok(oid) => {
-                // 4.1. Extract the tree
-                let commit = repo.find_commit(oid)
-                    .expect(&format!("Couldn't get a commit with ID {}", oid));
-                let tree = commit.tree()
-                    .expect(&format!("Couldn't obtain the tree of a commit with ID {}", oid));
-                let mut old_index = Index::new()
-                    .expect("Couldn't create an in-memory index for commit");
-                let mut new_index = Index::new().expect("Couldn't create an in-memory index");
-                old_index.read_tree(&tree)
-                    .expect(&format!("Couldn't read the commit {} into index", oid));
-                // 4.2. Obtain the new tree, where everything from the old one is moved under
-                //   a directory named after the submodule
-                for entry in old_index.iter() {
-                    let mut new_entry = entry;
-
-                    // TODO: what mode, owner, mtime etc. does the newly created dir get?
-                    let mut new_path = String::from(submodule_dir);
-                    new_path += "/";
-                    new_path += &String::from_utf8(new_entry.path)
-                        .expect("Failed to convert a path to str");
-
-                    new_entry.path = new_path.into_bytes();
-                    new_index.add(&new_entry).expect("Couldn't add an entry to the index");
-                }
-                let tree_id = new_index.write_tree_to(&repo)
-                    .expect("Couldn't write the index into a tree");
-                old_id_to_new.insert(tree.id(), tree_id);
-                let tree = repo.find_tree(tree_id)
-                    .expect("Couldn't retrieve the tree we just created");
-                // 4.3. Create new commit with the new tree
-                let parents = {
-                    let mut p: Vec<Commit> = Vec::new();
-                    for parent_id in commit.parent_ids() {
-                        let new_parent_id = old_id_to_new[&parent_id];
-                        let parent = repo.find_commit(new_parent_id)
-                            .expect("Couldn't find parent commit by its id");
-                        p.push(parent);
-                    }
-                    p
-                };
-
-                let mut parents_refs: Vec<&Commit> = Vec::new();
-                for i in 0..parents.len() {
-                    parents_refs.push(&parents[i]);
-                }
-                let new_commit_id = repo.commit(None,
-                            &commit.author(),
-                            &commit.committer(),
-                            &commit.message().expect("Couldn't retrieve commit's message"),
-                            &tree,
-                            &parents_refs[..])
-                    .expect("Failed to commit");
-                // 4.4. Update the map with the new commit's ID
-                old_id_to_new.insert(oid, new_commit_id);
-            }
-            Err(e) => eprintln!("Error walking the submodule's history: {:?}", e),
-        }
-    }
-}
-
-fn get_repo_revwalk<'repo>(repo: &'repo git2::Repository) -> git2::Revwalk<'repo> {
-    let mut revwalk = repo.revwalk().expect("Couldn't obtain RevWalk object for the repo");
-    revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
-    let head = repo.head().expect("Couldn't obtain repo's HEAD");
-    let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
-    // TODO: push all branches and tags, not just HEAD
-    revwalk.push(head_id).expect("Couldn't add repo's HEAD to RevWalk list");
-
-    revwalk
 }
