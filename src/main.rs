@@ -63,14 +63,9 @@ fn real_main() -> i32 {
     // 7. Remove submodule's remote
     repo.remote_delete(submodule_dir).expect("Couldn't remove submodule's remote");
     // 8. Run through master's history, doing two things:
-    let mut revwalk = repo.revwalk().expect("Couldn't obtain RevWalk object for the repo");
-    revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
-    let head = repo.head().expect("Couldn't obtain repo's HEAD");
-    let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
-    // TODO: push all branches and tags, not just HEAD
-    revwalk.push(head_id).expect("Couldn't add repo's HEAD to RevWalk list");
+    let repo_revwalk = get_repo_revwalk(&repo);
 
-    for maybe_oid in revwalk {
+    for maybe_oid in repo_revwalk {
         match maybe_oid {
             Ok(oid) => {
                 // 8.1 updating the tree to contain the relevant tree from submodule
@@ -206,6 +201,8 @@ fn real_main() -> i32 {
     let mut checkoutbuilder = CheckoutBuilder::new();
     checkoutbuilder.force();
 
+    let head = repo.head().expect("Couldn't obtain repo's HEAD");
+    let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
     let updated_id = old_id_to_new[&head_id];
     let object = repo.find_object(updated_id, None)
         .expect("Couldn't look up an object at which HEAD points");
@@ -301,4 +298,15 @@ fn rewrite_submodule_history(repo: &git2::Repository,
             Err(e) => eprintln!("Error walking the submodule's history: {:?}", e),
         }
     }
+}
+
+fn get_repo_revwalk<'repo>(repo: &'repo git2::Repository) -> git2::Revwalk<'repo> {
+    let mut revwalk = repo.revwalk().expect("Couldn't obtain RevWalk object for the repo");
+    revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
+    let head = repo.head().expect("Couldn't obtain repo's HEAD");
+    let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
+    // TODO: push all branches and tags, not just HEAD
+    revwalk.push(head_id).expect("Couldn't add repo's HEAD to RevWalk list");
+
+    revwalk
 }
