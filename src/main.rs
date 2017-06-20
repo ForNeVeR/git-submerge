@@ -67,16 +67,7 @@ fn real_main() -> i32 {
     rewrite_repo_history(&repo, &mut repo_revwalk, &mut old_id_to_new, &submodule_dir);
 
     // It's safe to do force-reset because we checked at the beginning and the repo was clean
-    let mut checkoutbuilder = CheckoutBuilder::new();
-    checkoutbuilder.force();
-
-    let head = repo.head().expect("Couldn't obtain repo's HEAD");
-    let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
-    let updated_id = old_id_to_new[&head_id];
-    let object = repo.find_object(updated_id, None)
-        .expect("Couldn't look up an object at which HEAD points");
-    repo.reset(&object, git2::ResetType::Hard, Some(&mut checkoutbuilder))
-        .expect("Couldn't run force-reset");
+    checkout_rewritten_history(&repo, &old_id_to_new);
 
     0 // An exit code indicating success
 }
@@ -317,4 +308,18 @@ fn rewrite_repo_history(repo: &git2::Repository,
             Err(e) => eprintln!("Error walking the submodule's history: {:?}", e),
         }
     }
+}
+
+fn checkout_rewritten_history(repo: &git2::Repository,
+                              old_id_to_new: &HashMap<git2::Oid, git2::Oid>) {
+    let mut checkoutbuilder = CheckoutBuilder::new();
+    checkoutbuilder.force();
+
+    let head = repo.head().expect("Couldn't obtain repo's HEAD");
+    let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
+    let updated_id = old_id_to_new[&head_id];
+    let object = repo.find_object(updated_id, None)
+        .expect("Couldn't look up an object at which HEAD points");
+    repo.reset(&object, git2::ResetType::Hard, Some(&mut checkoutbuilder))
+        .expect("Couldn't run force-reset");
 }
