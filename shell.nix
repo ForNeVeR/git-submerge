@@ -17,6 +17,8 @@ in rec {
     buildInputs = [
       rustNightly
 
+      pkgs.rustfmt
+
       pkgs.pkgconfig
       pkgs.openssl
       pkgs.libssh2
