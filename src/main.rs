@@ -1,11 +1,8 @@
 extern crate clap;
 extern crate git2;
 
-use git2::{Repository, Remote, Error, Index, Commit};
-use git2::build::CheckoutBuilder;
-use clap::{Arg, App};
-use std::path::Path;
-use std::collections::{HashMap, HashSet};
+use git2::{Repository, Commit, Oid, Revwalk, Index, Remote};
+use std::collections::HashMap;
 
 const E_NO_GIT_REPO: i32 = 1;
 
@@ -15,13 +12,13 @@ fn main() {
 }
 
 fn real_main() -> i32 {
-    let options = App::new("git-submerge")
+    let options = clap::App::new("git-submerge")
                           .version("0.1")
                           .author("Alexander Batischev <eual.jp@gmail.com>")
                           // TODO: get this in synch with Cargo.toml and README
                           .about("Merges git submodule into the repo as if it was that way \
                                   from the start")
-                          .arg(Arg::with_name("SUBMODULE_DIR")
+                          .arg(clap::Arg::with_name("SUBMODULE_DIR")
                                .help("The submodule to merge")
                                .required(true)
                                .index(1))
@@ -72,16 +69,14 @@ fn real_main() -> i32 {
     0 // An exit code indicating success
 }
 
-fn add_remote<'a>(repo: &'a Repository, submodule_name: &str) -> Result<Remote<'a>, Error> {
+fn add_remote<'a>(repo: &'a Repository, submodule_name: &str) -> Result<Remote<'a>, git2::Error> {
     // TODO: randomize remote's name or at least check that it doesn't exist already
     // Maybe use remote_anonymous()
     let url = String::from("./") + submodule_name;
     repo.remote(submodule_name, &url)
 }
 
-fn get_submodule_revwalk<'repo>(repo: &'repo git2::Repository,
-                                submodule_head: &git2::Oid)
-                                -> git2::Revwalk<'repo> {
+fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_head: &Oid) -> Revwalk<'repo> {
     let mut revwalk = repo.revwalk().expect("Couldn't obtain RevWalk object for the repo");
     // "Topological" and reverse means "parents are always visited before their children".
     // We need that in order to be sure that our old-to-new-ids map always contains everything we
@@ -93,9 +88,9 @@ fn get_submodule_revwalk<'repo>(repo: &'repo git2::Repository,
     revwalk
 }
 
-fn rewrite_submodule_history(repo: &git2::Repository,
-                             revwalk: &mut git2::Revwalk,
-                             old_id_to_new: &mut HashMap<git2::Oid, git2::Oid>,
+fn rewrite_submodule_history(repo: &Repository,
+                             revwalk: &mut Revwalk,
+                             old_id_to_new: &mut HashMap<Oid, Oid>,
                              submodule_dir: &str) {
     for maybe_oid in revwalk {
         match maybe_oid {
@@ -160,7 +155,7 @@ fn rewrite_submodule_history(repo: &git2::Repository,
     }
 }
 
-fn get_repo_revwalk<'repo>(repo: &'repo git2::Repository) -> git2::Revwalk<'repo> {
+fn get_repo_revwalk<'repo>(repo: &'repo Repository) -> Revwalk<'repo> {
     let mut revwalk = repo.revwalk().expect("Couldn't obtain RevWalk object for the repo");
     revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
     let head = repo.head().expect("Couldn't obtain repo's HEAD");
@@ -171,11 +166,11 @@ fn get_repo_revwalk<'repo>(repo: &'repo git2::Repository) -> git2::Revwalk<'repo
     revwalk
 }
 
-fn rewrite_repo_history(repo: &git2::Repository,
-                        revwalk: &mut git2::Revwalk,
-                        old_id_to_new: &mut HashMap<git2::Oid, git2::Oid>,
+fn rewrite_repo_history(repo: &Repository,
+                        revwalk: &mut Revwalk,
+                        old_id_to_new: &mut HashMap<Oid, Oid>,
                         submodule_dir: &str) {
-    let submodule_path = Path::new(submodule_dir);
+    let submodule_path = std::path::Path::new(submodule_dir);
 
     for maybe_oid in revwalk {
         match maybe_oid {
@@ -229,7 +224,7 @@ fn rewrite_repo_history(repo: &git2::Repository,
 
                 // 8.2 in commits that used to update the submodule, add a parent pointing to
                 //   appropriate commit in new submodule history
-                let mut parent_subtree_ids = HashSet::new();
+                let mut parent_subtree_ids = std::collections::HashSet::new();
                 for parent in commit.parents() {
                     let parent_tree = parent.tree().expect("Couldn't obtain parent's tree");
                     let parent_subdir_tree_id = parent_tree.get_path(submodule_path)
@@ -310,9 +305,8 @@ fn rewrite_repo_history(repo: &git2::Repository,
     }
 }
 
-fn checkout_rewritten_history(repo: &git2::Repository,
-                              old_id_to_new: &HashMap<git2::Oid, git2::Oid>) {
-    let mut checkoutbuilder = CheckoutBuilder::new();
+fn checkout_rewritten_history(repo: &Repository, old_id_to_new: &HashMap<Oid, Oid>) {
+    let mut checkoutbuilder = git2::build::CheckoutBuilder::new();
     checkoutbuilder.force();
 
     let head = repo.head().expect("Couldn't obtain repo's HEAD");
