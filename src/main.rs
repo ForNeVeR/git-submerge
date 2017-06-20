@@ -60,61 +60,7 @@ fn real_main() -> i32 {
 
     let mut old_id_to_new = HashMap::new();
 
-    for maybe_oid in revwalk {
-        match maybe_oid {
-            Ok(oid) => {
-                // 4.1. Extract the tree
-                let commit = repo.find_commit(oid).expect(&format!("Couldn't get a commit with ID {}", oid));
-                let tree = commit.tree().expect(&format!("Couldn't obtain the tree of a commit with ID {}", oid));
-                let mut old_index = Index::new().expect("Couldn't create an in-memory index for commit");
-                let mut new_index = Index::new().expect("Couldn't create an in-memory index");
-                old_index.read_tree(&tree).expect(&format!("Couldn't read the commit {} into index", oid));
-                // 4.2. Obtain the new tree, where everything from the old one is moved under
-                //   a directory named after the submodule
-                for entry in old_index.iter() {
-                    let mut new_entry = entry;
-
-                    // TODO: what mode, owner, mtime etc. does the newly created dir get?
-                    let mut new_path = String::from(submodule_dir);
-                    new_path += "/";
-                    new_path += &String::from_utf8(new_entry.path).expect("Failed to convert a path to str");
-
-                    new_entry.path = new_path.into_bytes();
-                    new_index.add(&new_entry).expect("Couldn't add an entry to the index");
-                }
-                let tree_id = new_index.write_tree_to(&repo).expect("Couldn't write the index into a tree");
-                old_id_to_new.insert(tree.id(), tree_id);
-                let tree = repo.find_tree(tree_id).expect("Couldn't retrieve the tree we just created");
-                // 4.3. Create new commit with the new tree
-                let parents = {
-                    let mut p: Vec<Commit> = Vec::new();
-                    for parent_id in commit.parent_ids() {
-                        let new_parent_id = old_id_to_new[&parent_id];
-                        let parent = repo.find_commit(new_parent_id).expect("Couldn't find parent commit by its id");
-                        p.push(parent);
-                    };
-                    p
-                };
-
-                let mut parents_refs: Vec<&Commit> = Vec::new();
-                for i in 0 .. parents.len() {
-                    parents_refs.push(&parents[i]);
-                }
-                let new_commit_id = repo.commit(
-                    None,
-                    &commit.author(),
-                    &commit.committer(),
-                    &commit.message().expect("Couldn't retrieve commit's message"),
-                    &tree,
-                    &parents_refs[..])
-                    .expect("Failed to commit");
-                // 4.4. Update the map with the new commit's ID
-                old_id_to_new.insert(oid, new_commit_id);
-            },
-            Err(e) =>
-                eprintln!("Error walking the submodule's history: {:?}", e),
-        }
-    };
+    rewrite_submodule_history(&repo, &mut revwalk, &mut old_id_to_new, &submodule_dir);
     // 7. Remove submodule's remote
     repo.remote_delete(submodule_dir).expect("Couldn't remove submodule's remote");
     // 8. Run through master's history, doing two things:
@@ -267,4 +213,67 @@ fn add_remote<'a>(repo : &'a Repository, submodule_name : &str) -> Result<Remote
     // Maybe use remote_anonymous()
     let url = String::from("./") + submodule_name;
     repo.remote(submodule_name, &url)
+}
+
+fn rewrite_submodule_history(
+    repo: &git2::Repository,
+    revwalk: &mut git2::Revwalk,
+    old_id_to_new: &mut HashMap<git2::Oid, git2::Oid>,
+    submodule_dir: &str)
+{
+    for maybe_oid in revwalk {
+        match maybe_oid {
+            Ok(oid) => {
+                // 4.1. Extract the tree
+                let commit = repo.find_commit(oid).expect(&format!("Couldn't get a commit with ID {}", oid));
+                let tree = commit.tree().expect(&format!("Couldn't obtain the tree of a commit with ID {}", oid));
+                let mut old_index = Index::new().expect("Couldn't create an in-memory index for commit");
+                let mut new_index = Index::new().expect("Couldn't create an in-memory index");
+                old_index.read_tree(&tree).expect(&format!("Couldn't read the commit {} into index", oid));
+                // 4.2. Obtain the new tree, where everything from the old one is moved under
+                //   a directory named after the submodule
+                for entry in old_index.iter() {
+                    let mut new_entry = entry;
+
+                    // TODO: what mode, owner, mtime etc. does the newly created dir get?
+                    let mut new_path = String::from(submodule_dir);
+                    new_path += "/";
+                    new_path += &String::from_utf8(new_entry.path).expect("Failed to convert a path to str");
+
+                    new_entry.path = new_path.into_bytes();
+                    new_index.add(&new_entry).expect("Couldn't add an entry to the index");
+                }
+                let tree_id = new_index.write_tree_to(&repo).expect("Couldn't write the index into a tree");
+                old_id_to_new.insert(tree.id(), tree_id);
+                let tree = repo.find_tree(tree_id).expect("Couldn't retrieve the tree we just created");
+                // 4.3. Create new commit with the new tree
+                let parents = {
+                    let mut p: Vec<Commit> = Vec::new();
+                    for parent_id in commit.parent_ids() {
+                        let new_parent_id = old_id_to_new[&parent_id];
+                        let parent = repo.find_commit(new_parent_id).expect("Couldn't find parent commit by its id");
+                        p.push(parent);
+                    };
+                    p
+                };
+
+                let mut parents_refs: Vec<&Commit> = Vec::new();
+                for i in 0 .. parents.len() {
+                    parents_refs.push(&parents[i]);
+                }
+                let new_commit_id = repo.commit(
+                    None,
+                    &commit.author(),
+                    &commit.committer(),
+                    &commit.message().expect("Couldn't retrieve commit's message"),
+                    &tree,
+                    &parents_refs[..])
+                    .expect("Failed to commit");
+                // 4.4. Update the map with the new commit's ID
+                old_id_to_new.insert(oid, new_commit_id);
+            },
+            Err(e) =>
+                eprintln!("Error walking the submodule's history: {:?}", e),
+        }
+    };
 }
