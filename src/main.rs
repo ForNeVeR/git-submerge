@@ -12,20 +12,7 @@ fn main() {
 }
 
 fn real_main() -> i32 {
-    let options = clap::App::new("git-submerge")
-                          .version("0.1")
-                          .author("Alexander Batischev <eual.jp@gmail.com>")
-                          // TODO: get this in synch with Cargo.toml and README
-                          .about("Merges git submodule into the repo as if it was that way \
-                                  from the start")
-                          .arg(clap::Arg::with_name("SUBMODULE_DIR")
-                               .help("The submodule to merge")
-                               .required(true)
-                               .index(1))
-                          .get_matches();
-    // We can safely use unwrap() here because if the option is empty, Clap would've already shown
-    // the error message and aborted.
-    let submodule_dir = options.value_of("SUBMODULE_DIR").unwrap();
+    let submodule_dir = parse_cli_arguments();
     println!("Merging {}...", submodule_dir);
 
     let repo = match Repository::open(".") {
@@ -38,7 +25,7 @@ fn real_main() -> i32 {
     };
 
     // 1. Add submodule as a remote
-    let mut remote = add_remote(&repo, submodule_dir).expect("Couldn't add a remote");
+    let mut remote = add_remote(&repo, &submodule_dir).expect("Couldn't add a remote");
     // 2. Fetch submodule's history
     remote.fetch(&[], None, None).expect("Couldn't fetch submodule's history");
     // 3. Find out submodule's HEAD commit id
@@ -57,7 +44,7 @@ fn real_main() -> i32 {
                               &mut old_id_to_new,
                               &submodule_dir);
     // 7. Remove submodule's remote
-    repo.remote_delete(submodule_dir).expect("Couldn't remove submodule's remote");
+    repo.remote_delete(&submodule_dir).expect("Couldn't remove submodule's remote");
     // 8. Run through master's history, doing two things:
     let mut repo_revwalk = get_repo_revwalk(&repo);
 
@@ -67,6 +54,24 @@ fn real_main() -> i32 {
     checkout_rewritten_history(&repo, &old_id_to_new);
 
     0 // An exit code indicating success
+}
+
+fn parse_cli_arguments() -> String {
+    let options = clap::App::new("git-submerge")
+                          .version("0.1")
+                          .author("Alexander Batischev <eual.jp@gmail.com>")
+                          // TODO: get this in synch with Cargo.toml and README
+                          .about("Merges git submodule into the repo as if it was that way \
+                                  from the start")
+                          .arg(clap::Arg::with_name("SUBMODULE_DIR")
+                               .help("The submodule to merge")
+                               .required(true)
+                               .index(1))
+                          .get_matches();
+
+    // We can safely use unwrap() here because the argument is marked as "required" and Clap checks
+    // its presence for us.
+    String::from( options.value_of("SUBMODULE_DIR").unwrap() )
 }
 
 fn add_remote<'a>(repo: &'a Repository, submodule_name: &str) -> Result<Remote<'a>, git2::Error> {
