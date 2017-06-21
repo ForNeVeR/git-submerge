@@ -24,18 +24,7 @@ fn real_main() -> i32 {
         }
     };
 
-    // 1. Add submodule as a remote
-    let mut remote = add_remote(&repo, &submodule_dir).expect("Couldn't add a remote");
-    // 2. Fetch submodule's history
-    remote.fetch(&[], None, None).expect("Couldn't fetch submodule's history");
-    // 3. Find out submodule's HEAD commit id
-    let submodule = repo.find_submodule(&submodule_dir)
-        .expect("Couldn't find the submodule with expected path");
-    let submodule_head = submodule.head_id()
-        .expect("Couldn't obtain submodule's HEAD");
-    // 4. Rewrite submodule branch's history, moving everything under a single directory named
-    //    after the submodule
-    let mut submodule_revwalk = get_submodule_revwalk(&repo, &submodule_head);
+    let mut submodule_revwalk = get_submodule_revwalk(&repo, &submodule_dir);
 
     let mut old_id_to_new = HashMap::new();
 
@@ -81,14 +70,26 @@ fn add_remote<'a>(repo: &'a Repository, submodule_name: &str) -> Result<Remote<'
     repo.remote(submodule_name, &url)
 }
 
-fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_head: &Oid) -> Revwalk<'repo> {
+fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_dir: &str) -> Revwalk<'repo> {
+    // 1. Add submodule as a remote
+    let mut remote = add_remote(&repo, submodule_dir).expect("Couldn't add a remote");
+    // 2. Fetch submodule's history
+    remote.fetch(&[], None, None).expect("Couldn't fetch submodule's history");
+    // 3. Find out submodule's HEAD commit id
+    let submodule = repo.find_submodule(submodule_dir)
+        .expect("Couldn't find the submodule with expected path");
+    let submodule_head = submodule.head_id()
+        .expect("Couldn't obtain submodule's HEAD");
+    // 4. Rewrite submodule branch's history, moving everything under a single directory named
+    //    after the submodule
+
     let mut revwalk = repo.revwalk().expect("Couldn't obtain RevWalk object for the repo");
     // "Topological" and reverse means "parents are always visited before their children".
     // We need that in order to be sure that our old-to-new-ids map always contains everything we
     // need it to contain.
     revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
     // TODO: push all branches and tags, not just HEAD
-    revwalk.push(*submodule_head).expect("Couldn't add submodule's HEAD to RevWalk list");
+    revwalk.push(submodule_head).expect("Couldn't add submodule's HEAD to RevWalk list");
 
     revwalk
 }
