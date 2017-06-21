@@ -1,9 +1,10 @@
 extern crate clap;
 extern crate git2;
 
-use git2::{Repository, Commit, Oid, Revwalk, Index, Remote};
+use git2::{Repository, Commit, Oid, Revwalk, Index};
 use std::collections::HashMap;
 
+const E_SUCCESS: i32 = 0;
 const E_NO_GIT_REPO: i32 = 1;
 
 fn main() {
@@ -32,17 +33,14 @@ fn real_main() -> i32 {
                               &mut submodule_revwalk,
                               &mut old_id_to_new,
                               &submodule_dir);
-    // 7. Remove submodule's remote
     repo.remote_delete(&submodule_dir).expect("Couldn't remove submodule's remote");
-    // 8. Run through master's history, doing two things:
-    let mut repo_revwalk = get_repo_revwalk(&repo);
 
+    let mut repo_revwalk = get_repo_revwalk(&repo);
     rewrite_repo_history(&repo, &mut repo_revwalk, &mut old_id_to_new, &submodule_dir);
 
-    // It's safe to do force-reset because we checked at the beginning and the repo was clean
     checkout_rewritten_history(&repo, &old_id_to_new);
 
-    0 // An exit code indicating success
+    E_SUCCESS
 }
 
 fn parse_cli_arguments() -> String {
@@ -63,25 +61,16 @@ fn parse_cli_arguments() -> String {
     String::from( options.value_of("SUBMODULE_DIR").unwrap() )
 }
 
-fn add_remote<'a>(repo: &'a Repository, submodule_name: &str) -> Result<Remote<'a>, git2::Error> {
+fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_dir: &str) -> Revwalk<'repo> {
     // TODO: randomize remote's name or at least check that it doesn't exist already
     // Maybe use remote_anonymous()
-    let url = String::from("./") + submodule_name;
-    repo.remote(submodule_name, &url)
-}
-
-fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_dir: &str) -> Revwalk<'repo> {
-    // 1. Add submodule as a remote
-    let mut remote = add_remote(&repo, submodule_dir).expect("Couldn't add a remote");
-    // 2. Fetch submodule's history
+    let submodule_url = String::from("./") + submodule_dir;
+    let mut remote = repo.remote(submodule_dir, &submodule_url).expect("Couldn't add a remote");
     remote.fetch(&[], None, None).expect("Couldn't fetch submodule's history");
-    // 3. Find out submodule's HEAD commit id
     let submodule = repo.find_submodule(submodule_dir)
         .expect("Couldn't find the submodule with expected path");
     let submodule_head = submodule.head_id()
         .expect("Couldn't obtain submodule's HEAD");
-    // 4. Rewrite submodule branch's history, moving everything under a single directory named
-    //    after the submodule
 
     let mut revwalk = repo.revwalk().expect("Couldn't obtain RevWalk object for the repo");
     // "Topological" and reverse means "parents are always visited before their children".
@@ -101,18 +90,19 @@ fn rewrite_submodule_history(repo: &Repository,
     for maybe_oid in revwalk {
         match maybe_oid {
             Ok(oid) => {
-                // 4.1. Extract the tree
                 let commit = repo.find_commit(oid)
                     .expect(&format!("Couldn't get a commit with ID {}", oid));
                 let tree = commit.tree()
                     .expect(&format!("Couldn't obtain the tree of a commit with ID {}", oid));
+                // TODO: consider using TreeBuilder instead of in-memory index
                 let mut old_index = Index::new()
                     .expect("Couldn't create an in-memory index for commit");
                 let mut new_index = Index::new().expect("Couldn't create an in-memory index");
                 old_index.read_tree(&tree)
                     .expect(&format!("Couldn't read the commit {} into index", oid));
-                // 4.2. Obtain the new tree, where everything from the old one is moved under
-                //   a directory named after the submodule
+
+                // Obtain the new tree, where everything from the old one is moved under
+                // a directory named after the submodule
                 for entry in old_index.iter() {
                     let mut new_entry = entry;
 
@@ -130,7 +120,7 @@ fn rewrite_submodule_history(repo: &Repository,
                 old_id_to_new.insert(tree.id(), tree_id);
                 let tree = repo.find_tree(tree_id)
                     .expect("Couldn't retrieve the tree we just created");
-                // 4.3. Create new commit with the new tree
+
                 let parents = {
                     let mut p: Vec<Commit> = Vec::new();
                     for parent_id in commit.parent_ids() {
@@ -153,7 +143,7 @@ fn rewrite_submodule_history(repo: &Repository,
                             &tree,
                             &parents_refs[..])
                     .expect("Failed to commit");
-                // 4.4. Update the map with the new commit's ID
+
                 old_id_to_new.insert(oid, new_commit_id);
             }
             Err(e) => eprintln!("Error walking the submodule's history: {:?}", e),
@@ -181,7 +171,6 @@ fn rewrite_repo_history(repo: &Repository,
     for maybe_oid in revwalk {
         match maybe_oid {
             Ok(oid) => {
-                // 8.1 updating the tree to contain the relevant tree from submodule
                 let commit = repo.find_commit(oid)
                     .expect(&format!("Couldn't get a commit with ID {}", oid));
                 let tree = commit.tree()
@@ -228,8 +217,8 @@ fn rewrite_repo_history(repo: &Repository,
                 let new_tree = repo.find_tree(new_tree_id)
                     .expect("Couldn't read back the Tree we just wrote");
 
-                // 8.2 in commits that used to update the submodule, add a parent pointing to
-                //   appropriate commit in new submodule history
+                // In commits that used to update the submodule, add a parent pointing to
+                // appropriate commit in new submodule history
                 let mut parent_subtree_ids = std::collections::HashSet::new();
                 for parent in commit.parents() {
                     let parent_tree = parent.tree().expect("Couldn't obtain parent's tree");
@@ -243,8 +232,8 @@ fn rewrite_repo_history(repo: &Repository,
                         }
                         Err(e) => {
                             if e.code() == git2::ErrorCode::NotFound &&
-                               e.class() == git2::ErrorClass::Tree {
-                                // It's okay; carry on.
+                               e.class() == git2::ErrorClass::Tree
+                            {
                                 continue;
                             } else {
                                 panic!("Error getting submodule's subdir from the tree: {:?}", e);
@@ -252,30 +241,37 @@ fn rewrite_repo_history(repo: &Repository,
                         }
                     }
                 }
-                // true if
+
+                // Here's a few pictures to help you understand how we figure out if current commit
+                // updated the submodule. If we draw a DAG and name submodule states, the following
+                // situations will mean that the submodule wasn't updated:
                 //
-                // o--o--o--A--
-                //             `,-C
-                //  o--o--o--B-
+                //     o--o--o--A--
+                //                 `,-A
+                //      o--o--o--B-
                 //
-                //  or
+                // or
                 //
-                // o--o--o--o--A--B
+                //     o--o--o--A--
+                //                 `,-B
+                //      o--o--o--B-
                 //
-                // false if
+                // And in the following graphs the submodule was updated:
                 //
-                // o--o--o--A--
-                //             `,-A
-                //  o--o--o--B-
+                //     o--o--o--A--
+                //                 `,-C
+                //      o--o--o--B-
                 //
-                //  or
+                // or
                 //
-                // o--o--o--A--
-                //             `,-B
-                //  o--o--o--B-
+                //     o--o--o--o--A--B
+                //
+                // Put into words, the rule will be "the submodule state in current commit is
+                // different from states in all its parents". Or, more formally, the current state
+                // doesn't belong to the set of states in parents.
                 let submodule_updated: bool = !parent_subtree_ids.contains(&submodule_commit_id);
 
-                // rewrite the parents if the submodule was updated
+                // Rewrite the parents if the submodule was updated
                 let parents = {
                     let mut p: Vec<Commit> = Vec::new();
                     for parent_id in commit.parent_ids() {
