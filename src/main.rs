@@ -47,7 +47,7 @@ fn parse_cli_arguments() -> String {
     let options = clap::App::new("git-submerge")
                           .version("0.1")
                           .author("Alexander Batischev <eual.jp@gmail.com>")
-                          // TODO: get this in synch with Cargo.toml and README
+                          // TODO (#8): get this in synch with Cargo.toml and README
                           .about("Merges git submodule into the repo as if it was that way \
                                   from the start")
                           .arg(clap::Arg::with_name("SUBMODULE_DIR")
@@ -62,8 +62,8 @@ fn parse_cli_arguments() -> String {
 }
 
 fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_dir: &str) -> Revwalk<'repo> {
-    // TODO: randomize remote's name or at least check that it doesn't exist already
-    // Maybe use remote_anonymous()
+    // TODO (#9): randomize remote's name or at least check that it doesn't exist already Maybe use
+    // remote_anonymous()
     let submodule_url = String::from("./") + submodule_dir;
     let mut remote = repo.remote(submodule_dir, &submodule_url).expect("Couldn't add a remote");
     remote.fetch(&[], None, None).expect("Couldn't fetch submodule's history");
@@ -77,7 +77,7 @@ fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_dir: &str) ->
     // We need that in order to be sure that our old-to-new-ids map always contains everything we
     // need it to contain.
     revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
-    // TODO: push all branches and tags, not just HEAD
+    // TODO (#6): push all branches and tags, not just HEAD
     revwalk.push(submodule_head).expect("Couldn't add submodule's HEAD to RevWalk list");
 
     revwalk
@@ -94,7 +94,7 @@ fn rewrite_submodule_history(repo: &Repository,
                     .expect(&format!("Couldn't get a commit with ID {}", oid));
                 let tree = commit.tree()
                     .expect(&format!("Couldn't obtain the tree of a commit with ID {}", oid));
-                // TODO: consider using TreeBuilder instead of in-memory index
+                // TODO (#10): consider using TreeBuilder instead of in-memory index
                 let mut old_index = Index::new()
                     .expect("Couldn't create an in-memory index for commit");
                 let mut new_index = Index::new().expect("Couldn't create an in-memory index");
@@ -106,7 +106,7 @@ fn rewrite_submodule_history(repo: &Repository,
                 for entry in old_index.iter() {
                     let mut new_entry = entry;
 
-                    // TODO: what mode, owner, mtime etc. does the newly created dir get?
+                    // TODO (#11): what mode, owner, mtime etc. does the newly created dir get?
                     let mut new_path = String::from(submodule_dir);
                     new_path += "/";
                     new_path += &String::from_utf8(new_entry.path)
@@ -156,7 +156,7 @@ fn get_repo_revwalk<'repo>(repo: &'repo Repository) -> Revwalk<'repo> {
     revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
     let head = repo.head().expect("Couldn't obtain repo's HEAD");
     let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
-    // TODO: push all branches and tags, not just HEAD
+    // TODO (#6): push all branches and tags, not just HEAD
     revwalk.push(head_id).expect("Couldn't add repo's HEAD to RevWalk list");
 
     revwalk
@@ -188,7 +188,7 @@ fn rewrite_repo_history(repo: &Repository,
                             continue;
                         } else {
                             // Unexpected error; let's report it and abort the program
-                            // TODO: clean things up before aborting
+                            // TODO (#12): clean things up before aborting
                             panic!("Error getting submodule's subdir from the tree: {:?}", e);
                         };
                     }
