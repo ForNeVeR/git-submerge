@@ -1,0 +1,21 @@
+language: rust
+matrix:
+  include:
+    - rust: stable
+      os: linux
+    - rust: stable
+      os: osx
+    - rust: beta
+      os: linux
+    - rust: beta
+      os: osx
+    - rust: nightly
+      os: linux
+    - rust: nightly
+      os: osx
+cache:
+ directories:
+  - $HOME/.cargo
+sudo: false
+script:
+  - cargo build
