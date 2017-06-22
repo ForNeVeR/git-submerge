@@ -27,7 +27,7 @@ The following things happened:
   commits;
 
 * the yet-unmerged "tail" of the submodule history (commit N) is given its own
-  branch so you can merge it yourself later.
+  branch so you can merge it yourself later (#18).
 
 Just as any other kind of history rewriting, this operation changes the hashes
 of the commits, so you shouldn't run it on published histories.
