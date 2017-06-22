@@ -33,7 +33,6 @@ fn real_main() -> i32 {
                               &mut submodule_revwalk,
                               &mut old_id_to_new,
                               &submodule_dir);
-    repo.remote_delete(&submodule_dir).expect("Couldn't remove submodule's remote");
 
     let mut repo_revwalk = get_repo_revwalk(&repo);
     rewrite_repo_history(&repo, &mut repo_revwalk, &mut old_id_to_new, &submodule_dir);
@@ -62,10 +61,8 @@ fn parse_cli_arguments() -> String {
 }
 
 fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_dir: &str) -> Revwalk<'repo> {
-    // TODO (#9): randomize remote's name or at least check that it doesn't exist already Maybe use
-    // remote_anonymous()
     let submodule_url = String::from("./") + submodule_dir;
-    let mut remote = repo.remote(submodule_dir, &submodule_url).expect("Couldn't add a remote");
+    let mut remote = repo.remote_anonymous(&submodule_url).expect("Couldn't create an anonymous remote");
     remote.fetch(&[], None, None).expect("Couldn't fetch submodule's history");
     let submodule = repo.find_submodule(submodule_dir)
         .expect("Couldn't find the submodule with expected path");
@@ -188,7 +185,6 @@ fn rewrite_repo_history(repo: &Repository,
                             continue;
                         } else {
                             // Unexpected error; let's report it and abort the program
-                            // TODO (#12): clean things up before aborting
                             panic!("Error getting submodule's subdir from the tree: {:?}", e);
                         };
                     }
