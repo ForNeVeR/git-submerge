@@ -4,6 +4,9 @@ extern crate git2;
 use git2::{Repository, Commit, Oid, Revwalk, Index};
 use std::collections::HashMap;
 
+#[macro_use]
+mod macros;
+
 const E_SUCCESS: i32 = 0;
 const E_NO_GIT_REPO: i32 = 1;
 
