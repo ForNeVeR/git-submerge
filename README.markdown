@@ -31,3 +31,8 @@ The following things happened:
 
 Just as any other kind of history rewriting, this operation changes the hashes
 of the commits, so you shouldn't run it on published histories.
+
+Build instructions
+==================
+
+Requires rustc 1.15+ and cargo 0.16+.
