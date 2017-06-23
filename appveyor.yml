@@ -1,47 +1,28 @@
 environment:
   matrix:
-  - TARGET: i686-pc-windows-msvc
-  - TARGET: i686-pc-windows-gnu
-    MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/7.1.0/threads-win32/dwarf/i686-7.1.0-release-win32-dwarf-rt_v5-rev0.7z/download
-    MINGW_ARCHIVE: i686-7.1.0-release-win32-dwarf-rt_v5-rev0.7z
-    MINGW_DIR: mingw32
-    DIR_TEMP_MINGW: C:\cached\mingw
-  - TARGET: x86_64-pc-windows-msvc
   - TARGET: x86_64-pc-windows-gnu
     MSYS_BITS: 64
-
+  - TARGET: i686-pc-windows-gnu
+    MSYS_BITS: 32
+  - TARGET: x86_64-pc-windows-msvc
+  - TARGET: i686-pc-windows-msvc
+  - TARGET: x86_64-pc-windows-msvc
+    VCPKG_DEFAULT_TRIPLET: x64-windows-static
+    RUSTFLAGS: -Ctarget-feature=+crt-static
 install:
   - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-nightly-${env:TARGET}.exe"
-  - SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin;C:\MinGW\bin
-
-  # Use the system msys if we can
-  - if defined MSYS_BITS set PATH=C:\msys64\mingw%MSYS_BITS%\bin;C:\msys64\usr\bin;%PATH%
-
-  - ps: >-
-      if ((Test-Path Env:\MINGW_ARCHIVE) -and -not (Test-Path "${env:DIR_TEMP_MINGW}\${env:MINGW_ARCHIVE}")) {
-        if (Test-Path "${env:DIR_TEMP_MINGW}") {
-          rm -Recurse ${env:DIR_TEMP_MINGW}\*;
-        }
-        New-Item -ItemType Directory -Force -Path ${env:DIR_TEMP_MINGW} | Out-Null;
-        $download_loc = ${env:MINGW_URL};
-        Start-FileDownload $download_loc -FileName "${env:DIR_TEMP_MINGW}\${env:MINGW_ARCHIVE}";
-      }
-  - if defined MINGW_ARCHIVE 7z x -y "%DIR_TEMP_MINGW%\%MINGW_ARCHIVE%" > nul
-  - if defined MINGW_ARCHIVE set PATH=%CD%\%MINGW_DIR%\bin;C:\msys64\usr\bin;%PATH%
-
   - rust-nightly-%TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
-
+  - set PATH=%PATH%;C:\Program Files (x86)\Rust\bin
+  - if defined MSYS_BITS set PATH=%PATH%;C:\msys64\mingw%MSYS_BITS%\bin;C:\msys64\usr\bin
   - rustc -V
   - cargo -V
-
-artifacts:
-  - path: target\debug\git-submerge.exe
-    name: git-submerge.exe
+  - if defined VCPKG_DEFAULT_TRIPLET git clone https://github.com/Microsoft/vcpkg c:\projects\vcpkg
+  - if defined VCPKG_DEFAULT_TRIPLET c:\projects\vcpkg\bootstrap-vcpkg.bat
+  - if defined VCPKG_DEFAULT_TRIPLET set VCPKG_ROOT=c:\projects\vcpkg
+  - if defined VCPKG_DEFAULT_TRIPLET %VCPKG_ROOT%\vcpkg.exe install zlib
 
 build: false
 
 test_script:
-  - cargo test
-
-cache:
-  - c:\cached
+  - cargo test --target %TARGET%
+  - cargo run --manifest-path systest/Cargo.toml --target %TARGET%
