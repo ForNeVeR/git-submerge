@@ -14,8 +14,8 @@ like this:
 After running `git submerge submodule`, the history will look like this:
 
     repository   A-B---D'-E'-F'--H'--------K'--M'----O'   master
-                      / \       / \           /
-                     C   ------G'  --I'-J'---L'---N'      sub-master
+                      /         /             /
+                     C---------G'----I'-J'---L'---N'      sub-master
 
 The following things happened:
 
