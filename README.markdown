@@ -69,13 +69,13 @@ To check that your build behaves the way the developers expect, do the following
 1. Prepare a directory for your tests:
 
     ```console
-    $ mkdir /dev/shm/git-submerge-testbed
+    $ mkdir /tmp/git-submerge-testbed
     ```
 
 2. Create the submodule repo:
 
     ```console
-    $ cd /dev/shm/git-submerge-testbed
+    $ cd /tmp/git-submerge-testbed
     # Assuming you have git-submerge cloned to /home/user/git-submerge
     $ git clone /home/user/git-submerge sub
     # ...otherwise
@@ -87,7 +87,7 @@ To check that your build behaves the way the developers expect, do the following
 3. Create the main repo:
 
     ```console
-    $ cd /dev/shm/git-submerge-testbed
+    $ cd /tmp/git-submerge-testbed
     # Assuming you have git-submerge cloned to /home/user/git-submerge
     $ git clone /home/user/git-submerge repo
     # ...otherwise
