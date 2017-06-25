@@ -72,11 +72,11 @@ fn parse_cli_arguments(mappings: &mut HashMap<Oid, Oid>) -> Result<String, i32> 
             .required(true)
             .index(1))
         .arg(clap::Arg::with_name("mapping")
-            .help("Whenever main repo references submodule's <commit id1>, the <commit id2> \
+            .value_names(&["commit id 1", "commit id 2"])
+            .help("Whenever main repo references submodule's <commit id 1>, the <commit id 2> \
                    will be used instead")
             .short("m")
             .long("mapping")
-            .value_names(&["commit id1", "commit id2"])
             .number_of_values(2)
             .multiple(true))
         .get_matches();
