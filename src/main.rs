@@ -21,8 +21,8 @@ fn main() {
 
 fn real_main() -> i32 {
     let mut mappings: HashMap<Oid, Oid> = HashMap::new();
-    let submodule_dir = match parse_cli_arguments(&mut mappings) {
-        Ok(dir) => dir,
+    let (submodule_dir, default_mapping) = match parse_cli_arguments(&mut mappings) {
+        Ok((dir, oid)) => (dir, oid),
         Err(exit_code) => return exit_code,
     };
 
@@ -36,7 +36,7 @@ fn real_main() -> i32 {
         }
     };
 
-    if !are_mappings_valid(&repo, &submodule_dir, &mappings) {
+    if !are_mappings_valid(&repo, &submodule_dir, &mappings, &default_mapping) {
         return E_INVALID_MAPPINGS;
     }
 
@@ -46,19 +46,27 @@ fn real_main() -> i32 {
 
     rewrite_submodule_history(&repo, &mut old_id_to_new, &submodule_dir);
 
-    match find_dangling_references_to_submodule(&repo, &submodule_dir, &old_id_to_new, &mappings) {
+    match find_dangling_references_to_submodule(&repo,
+                                                &submodule_dir,
+                                                &old_id_to_new,
+                                                &mappings,
+                                                &default_mapping) {
         Some(_) => return E_FOUND_DANGLING_REFERENCES,
         None => {}
     }
 
-    rewrite_repo_history(&repo, &mut old_id_to_new, &mappings, &submodule_dir);
+    rewrite_repo_history(&repo,
+                         &mut old_id_to_new,
+                         &mappings,
+                         &default_mapping,
+                         &submodule_dir);
 
     checkout_rewritten_history(&repo, &old_id_to_new);
 
     E_SUCCESS
 }
 
-fn parse_cli_arguments(mappings: &mut HashMap<Oid, Oid>) -> Result<String, i32> {
+fn parse_cli_arguments(mappings: &mut HashMap<Oid, Oid>) -> Result<(String, Option<Oid>), i32> {
     let options = clap::App::new("git-submerge")
         .version("0.1")
         .author(crate_authors!())
@@ -75,6 +83,14 @@ fn parse_cli_arguments(mappings: &mut HashMap<Oid, Oid>) -> Result<String, i32> 
             .long("mapping")
             .number_of_values(2)
             .multiple(true))
+        .arg(clap::Arg::with_name("default-mapping")
+            .value_name("commit id")
+            .help("Whenever main repo references a commit that is neither in submodule's \
+                   history nor in mappings (see --mapping), the <commit id> will be used instead")
+            .short("d")
+            .long("default-mapping")
+            .number_of_values(1)
+            .multiple(false))
         .get_matches();
 
     match options.values_of("mapping") {
@@ -107,26 +123,44 @@ fn parse_cli_arguments(mappings: &mut HashMap<Oid, Oid>) -> Result<String, i32> 
         }
     }
 
+    let default_mapping_str = options.value_of("default-mapping");
+    let default_mapping = if let Some(s) = default_mapping_str {
+        match Oid::from_str(s) {
+            Ok(oid) => Some(oid),
+            Err(_) => {
+                eprintln!("{} is not a valid 40-character hex string", s);
+                return Err(E_INVALID_COMMIT_ID);
+            }
+        }
+    } else {
+        None
+    };
+
     // We can safely use unwrap() here because the argument is marked as "required" and Clap checks
     // its presence for us.
-    Ok(String::from(options.value_of("SUBMODULE_DIR").unwrap()))
+    Ok((String::from(options.value_of("SUBMODULE_DIR").unwrap()), default_mapping))
 }
 
 // Checks if all the values in the `mappings` exist in submodule's history
 fn are_mappings_valid(repo: &Repository,
                       submodule_dir: &str,
-                      mappings: &HashMap<Oid, Oid>)
+                      mappings: &HashMap<Oid, Oid>,
+                      default_mapping: &Option<Oid>)
                       -> bool {
-    let mut commits: HashSet<&Oid> = mappings.values().collect();
+    let mut commits: HashSet<Oid> = mappings.values().cloned().collect();
+    if let &Some(oid) = default_mapping {
+        commits.insert(oid);
+    };
+
     let revwalk = get_submodule_revwalk(&repo, &submodule_dir);
     for maybe_oid in revwalk {
         match maybe_oid {
             Ok(oid) => {
                 commits.remove(&oid);
-            },
+            }
             Err(e) => eprintln!("Error walking the submodule's history: {:?}", e),
         }
-    };
+    }
 
     for commit in commits.iter() {
         eprintln!("Commit {} not found in submodule's history.", commit);
@@ -225,7 +259,8 @@ fn rewrite_submodule_history(repo: &Repository,
 fn find_dangling_references_to_submodule<'repo>(repo: &'repo Repository,
                                                 submodule_dir: &str,
                                                 old_id_to_new: &HashMap<Oid, Oid>,
-                                                mappings: &HashMap<Oid, Oid>)
+                                                mappings: &HashMap<Oid, Oid>,
+                                                default_mapping: &Option<Oid>)
                                                 -> Option<bool> {
     let submodule_path = std::path::Path::new(submodule_dir);
 
@@ -263,7 +298,8 @@ fn find_dangling_references_to_submodule<'repo>(repo: &'repo Repository,
 
                 let submodule_commit_id = submodule_subdir.id();
                 if !known_submodule_commits.contains(&submodule_commit_id) &&
-                   !mappings.contains_key(&submodule_commit_id) {
+                   !mappings.contains_key(&submodule_commit_id) &&
+                   default_mapping.is_none() {
                     dangling_references.insert(submodule_commit_id);
                 }
             }
@@ -299,6 +335,7 @@ fn get_repo_revwalk<'repo>(repo: &'repo Repository) -> Revwalk<'repo> {
 fn rewrite_repo_history(repo: &Repository,
                         old_id_to_new: &mut HashMap<Oid, Oid>,
                         mappings: &HashMap<Oid, Oid>,
+                        default_mapping: &Option<Oid>,
                         submodule_dir: &str) {
     let revwalk = get_repo_revwalk(&repo);
     let submodule_path = std::path::Path::new(submodule_dir);
@@ -336,7 +373,17 @@ fn rewrite_repo_history(repo: &Repository,
                     Some(id) => *id,
                     None => submodule_commit_id,
                 };
-                new_submodule_commit_id = old_id_to_new[&new_submodule_commit_id];
+                new_submodule_commit_id = match old_id_to_new.get(&new_submodule_commit_id) {
+                    Some(id) => *id,
+                    None => {
+                        let mapped =
+                            default_mapping
+                            .expect(&format!("Found a commit that isn't in mappings, \
+                                              and default-mapping is empty: {}",
+                                              new_submodule_commit_id));
+                        old_id_to_new[&mapped]
+                    }
+                };
                 let submodule_commit = repo.find_commit(new_submodule_commit_id)
                     .expect("Couldn't obtain submodule's commit");
                 let subtree_id = submodule_commit.tree()
