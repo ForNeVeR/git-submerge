@@ -3,7 +3,7 @@ extern crate clap;
 extern crate git2;
 
 use git2::{Repository, Commit, Oid, Revwalk, Index};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[macro_use]
 mod macros;
@@ -12,6 +12,7 @@ const E_SUCCESS: i32 = 0;
 const E_NO_GIT_REPO: i32 = 1;
 const E_FOUND_DANGLING_REFERENCES: i32 = 2;
 const E_INVALID_COMMIT_ID: i32 = 3;
+const E_INVALID_MAPPINGS: i32 = 4;
 
 fn main() {
     let exit_code = real_main();
@@ -25,7 +26,6 @@ fn real_main() -> i32 {
         Err(exit_code) => return exit_code,
     };
 
-    println!("Merging {}...", submodule_dir);
 
     let repo = match Repository::open(".") {
         Ok(repo) => repo,
@@ -36,6 +36,12 @@ fn real_main() -> i32 {
         }
     };
 
+    if !are_mappings_valid(&repo, &submodule_dir, &mappings) {
+        return E_INVALID_MAPPINGS;
+    }
+
+    println!("Merging {}...", submodule_dir);
+
     let mut old_id_to_new = HashMap::new();
 
     rewrite_submodule_history(&repo, &mut old_id_to_new, &submodule_dir);
@@ -45,10 +51,7 @@ fn real_main() -> i32 {
         None => {}
     }
 
-    rewrite_repo_history(&repo,
-                         &mut old_id_to_new,
-                         &mappings,
-                         &submodule_dir);
+    rewrite_repo_history(&repo, &mut old_id_to_new, &mappings, &submodule_dir);
 
     checkout_rewritten_history(&repo, &old_id_to_new);
 
@@ -107,6 +110,29 @@ fn parse_cli_arguments(mappings: &mut HashMap<Oid, Oid>) -> Result<String, i32> 
     // We can safely use unwrap() here because the argument is marked as "required" and Clap checks
     // its presence for us.
     Ok(String::from(options.value_of("SUBMODULE_DIR").unwrap()))
+}
+
+// Checks if all the values in the `mappings` exist in submodule's history
+fn are_mappings_valid(repo: &Repository,
+                      submodule_dir: &str,
+                      mappings: &HashMap<Oid, Oid>)
+                      -> bool {
+    let mut commits: HashSet<&Oid> = mappings.values().collect();
+    let revwalk = get_submodule_revwalk(&repo, &submodule_dir);
+    for maybe_oid in revwalk {
+        match maybe_oid {
+            Ok(oid) => {
+                commits.remove(&oid);
+            },
+            Err(e) => eprintln!("Error walking the submodule's history: {:?}", e),
+        }
+    };
+
+    for commit in commits.iter() {
+        eprintln!("Commit {} not found in submodule's history.", commit);
+    }
+
+    commits.len() == 0
 }
 
 fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_dir: &str) -> Revwalk<'repo> {
@@ -203,8 +229,8 @@ fn find_dangling_references_to_submodule<'repo>(repo: &'repo Repository,
                                                 -> Option<bool> {
     let submodule_path = std::path::Path::new(submodule_dir);
 
-    let known_submodule_commits: std::collections::HashSet<&Oid> = old_id_to_new.keys().collect();
-    let mut dangling_references = std::collections::HashSet::new();
+    let known_submodule_commits: HashSet<&Oid> = old_id_to_new.keys().collect();
+    let mut dangling_references = HashSet::new();
 
     let revwalk = get_repo_revwalk(&repo);
 
@@ -331,7 +357,7 @@ fn rewrite_repo_history(repo: &Repository,
 
                 // In commits that used to update the submodule, add a parent pointing to
                 // appropriate commit in new submodule history
-                let mut parent_subtree_ids = std::collections::HashSet::new();
+                let mut parent_subtree_ids = HashSet::new();
                 for parent in commit.parents() {
                     let parent_tree = parent.tree().expect("Couldn't obtain parent's tree");
                     let parent_subdir_tree_id = parent_tree.get_path(submodule_path)
