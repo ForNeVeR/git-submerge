@@ -36,8 +36,11 @@ The following things happened:
 * the yet-unmerged "tail" of the submodule history (commit N) is given its own
   branch so you can merge it yourself later (#18).
 
-Just as any other kind of history rewriting, this operation changes the hashes
-of the commits, so you shouldn't run it on published histories.
+**ATTENTION!** Just as any other kind of history rewriting, `git-submerge`
+changes the hashes of the commits, so you shouldn't run it on published
+histories. Furthermore, beware of bugs! Run this on a fresh clone of your
+repository, and never delete the old history until you're reasonably sure that
+the new one is what you expect it to be.
 
 Dealing with dangling references
 ================================
