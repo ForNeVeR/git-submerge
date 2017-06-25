@@ -39,10 +39,27 @@ The following things happened:
 Just as any other kind of history rewriting, this operation changes the hashes
 of the commits, so you shouldn't run it on published histories.
 
-Build instructions
-==================
+Building
+========
 
-Requires rustc 1.15+ and cargo 0.16+.
+git-submerge requires rustc 1.15+ and cargo 0.16+, so you might need to update
+your build environment first:
+
+```console
+$ rustup update
+```
+
+NixOS users can use the Nix shell; it'll fetch Rust nightly:
+
+```console
+$ nix-shell
+```
+
+After that, it's the usual jazz:
+
+```console
+$ cargo build
+```
 
 Testing
 =======
