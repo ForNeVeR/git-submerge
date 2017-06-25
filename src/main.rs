@@ -47,24 +47,24 @@ fn real_main() -> i32 {
 
 fn parse_cli_arguments() -> String {
     let options = clap::App::new("git-submerge")
-                          .version("0.1")
-                          .author("Alexander Batischev <eual.jp@gmail.com>")
-                          .about("Merge Git submodule into the main repo \
-                                  as if they've never been separate at all")
-                          .arg(clap::Arg::with_name("SUBMODULE_DIR")
-                               .help("The submodule to merge")
-                               .required(true)
-                               .index(1))
-                          .get_matches();
+        .version("0.1")
+        .author("Alexander Batischev <eual.jp@gmail.com>")
+        .about("Merge Git submodule into the main repo as if they've never been separate at all")
+        .arg(clap::Arg::with_name("SUBMODULE_DIR")
+            .help("The submodule to merge")
+            .required(true)
+            .index(1))
+        .get_matches();
 
     // We can safely use unwrap() here because the argument is marked as "required" and Clap checks
     // its presence for us.
-    String::from( options.value_of("SUBMODULE_DIR").unwrap() )
+    String::from(options.value_of("SUBMODULE_DIR").unwrap())
 }
 
 fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_dir: &str) -> Revwalk<'repo> {
     let submodule_url = String::from("./") + submodule_dir;
-    let mut remote = repo.remote_anonymous(&submodule_url).expect("Couldn't create an anonymous remote");
+    let mut remote = repo.remote_anonymous(&submodule_url)
+        .expect("Couldn't create an anonymous remote");
     remote.fetch(&[], None, None).expect("Couldn't fetch submodule's history");
     let submodule = repo.find_submodule(submodule_dir)
         .expect("Couldn't find the submodule with expected path");
@@ -228,8 +228,7 @@ fn rewrite_repo_history(repo: &Repository,
                         }
                         Err(e) => {
                             if e.code() == git2::ErrorCode::NotFound &&
-                               e.class() == git2::ErrorClass::Tree
-                            {
+                               e.class() == git2::ErrorClass::Tree {
                                 continue;
                             } else {
                                 panic!("Error getting submodule's subdir from the tree: {:?}", e);
@@ -298,7 +297,7 @@ fn rewrite_repo_history(repo: &Repository,
 
                 old_id_to_new.insert(oid, new_commit_id);
             }
-            Err(e) => eprintln!("Error walking the submodule's history: {:?}", e),
+            Err(e) => eprintln!("Error walking the repo's history: {:?}", e),
         }
     }
 }
