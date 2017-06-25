@@ -93,7 +93,6 @@ fn rewrite_submodule_history(repo: &Repository,
                     .expect(&format!("Couldn't get a commit with ID {}", oid));
                 let tree = commit.tree()
                     .expect(&format!("Couldn't obtain the tree of a commit with ID {}", oid));
-                // TODO (#10): consider using TreeBuilder instead of in-memory index
                 let mut old_index = Index::new()
                     .expect("Couldn't create an in-memory index for commit");
                 let mut new_index = Index::new().expect("Couldn't create an in-memory index");
