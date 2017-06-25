@@ -1,4 +1,4 @@
-git-submerge [![Build Status](https://travis-ci.org/Minoru/git-submerge.svg?branch=master)](https://travis-ci.org/Minoru/git-submerge)
+git-submerge [![Build Status](https://travis-ci.org/Minoru/git-submerge.svg?branch=master)](https://travis-ci.org/Minoru/git-submerge) [![Build status](https://ci.appveyor.com/api/projects/status/2a63wgfyk2utv6f0/branch/master?svg=true)](https://ci.appveyor.com/project/Minoru/git-submerge/branch/master)
 ============
 
 Suppose you have a repo with a submodule. Their collective history might look
