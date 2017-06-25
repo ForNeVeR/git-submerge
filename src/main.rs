@@ -317,6 +317,9 @@ fn find_dangling_references_to_submodule<'repo>(repo: &'repo Repository,
             eprintln!("{}", id);
         }
 
+        eprintln!("You can use --mapping and --default-mapping options to make git-submerge \
+                   replace these commits with some other, still existing, commits.");
+
         Some(true)
     }
 }
