@@ -1,10 +1,10 @@
 git-submerge [![Travis build status][travis-badge]][travis-build] [![Appveyor build status][appveyor-badge]][appveyor-build] [![Andivionian status umbra][status-umbra-badge]][andivionian-status-umbra]
 ============
 
-[travis-badge]: (https://travis-ci.org/Minoru/git-submerge.svg?branch=master)
-[travis-build]: (https://travis-ci.org/Minoru/git-submerge)
-[appveyor-badge]: (https://ci.appveyor.com/api/projects/status/2a63wgfyk2utv6f0/branch/master?svg=true)
-[appveyor-build]: (https://ci.appveyor.com/project/Minoru/git-submerge/branch/master)
+[travis-badge]: https://travis-ci.org/Minoru/git-submerge.svg?branch=master
+[travis-build]: https://travis-ci.org/Minoru/git-submerge
+[appveyor-badge]: https://ci.appveyor.com/api/projects/status/2a63wgfyk2utv6f0/branch/master?svg=true
+[appveyor-build]: https://ci.appveyor.com/project/Minoru/git-submerge/branch/master
 [status-umbra-badge]: https://img.shields.io/badge/status-enfer-orange.svg
 [andivionian-status-umbra]: https://github.com/ForNeVeR/andivionian-status-classifier#status-umbra-
 
