@@ -36,23 +36,16 @@ fn real_main() -> i32 {
         }
     };
 
-    let mut submodule_revwalk = get_submodule_revwalk(&repo, &submodule_dir);
-
     let mut old_id_to_new = HashMap::new();
 
-    rewrite_submodule_history(&repo,
-                              &mut submodule_revwalk,
-                              &mut old_id_to_new,
-                              &submodule_dir);
+    rewrite_submodule_history(&repo, &mut old_id_to_new, &submodule_dir);
 
     match find_dangling_references_to_submodule(&repo, &submodule_dir, &old_id_to_new, &mappings) {
         Some(_) => return E_FOUND_DANGLING_REFERENCES,
         None => {}
     }
 
-    let mut repo_revwalk = get_repo_revwalk(&repo);
     rewrite_repo_history(&repo,
-                         &mut repo_revwalk,
                          &mut old_id_to_new,
                          &mappings,
                          &submodule_dir);
@@ -138,9 +131,9 @@ fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_dir: &str) ->
 }
 
 fn rewrite_submodule_history(repo: &Repository,
-                             revwalk: &mut Revwalk,
                              old_id_to_new: &mut HashMap<Oid, Oid>,
                              submodule_dir: &str) {
+    let revwalk = get_submodule_revwalk(&repo, &submodule_dir);
     for maybe_oid in revwalk {
         match maybe_oid {
             Ok(oid) => {
@@ -278,10 +271,10 @@ fn get_repo_revwalk<'repo>(repo: &'repo Repository) -> Revwalk<'repo> {
 }
 
 fn rewrite_repo_history(repo: &Repository,
-                        revwalk: &mut Revwalk,
                         old_id_to_new: &mut HashMap<Oid, Oid>,
                         mappings: &HashMap<Oid, Oid>,
                         submodule_dir: &str) {
+    let revwalk = get_repo_revwalk(&repo);
     let submodule_path = std::path::Path::new(submodule_dir);
 
     for maybe_oid in revwalk {
