@@ -104,7 +104,6 @@ fn rewrite_submodule_history(repo: &Repository,
                 for entry in old_index.iter() {
                     let mut new_entry = entry;
 
-                    // TODO (#11): what mode, owner, mtime etc. does the newly created dir get?
                     let mut new_path = String::from(submodule_dir);
                     new_path += "/";
                     new_path += &String::from_utf8(new_entry.path)
