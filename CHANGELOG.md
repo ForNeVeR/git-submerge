@@ -13,6 +13,7 @@ First public release.
 
 ###Added
 - Merges submodules that reside in the repository's root
+- User can provide mappings from missing commit IDs to existing ones
 
 
 
