@@ -9,6 +9,7 @@ mod macros;
 
 const E_SUCCESS: i32 = 0;
 const E_NO_GIT_REPO: i32 = 1;
+const E_FOUND_DANGLING_REFERENCES: i32 = 2;
 
 fn main() {
     let exit_code = real_main();
@@ -36,6 +37,11 @@ fn real_main() -> i32 {
                               &mut submodule_revwalk,
                               &mut old_id_to_new,
                               &submodule_dir);
+
+    match find_dangling_references_to_submodule(&repo, &submodule_dir, &old_id_to_new) {
+        Some(_) => return E_FOUND_DANGLING_REFERENCES,
+        None => {}
+    }
 
     let mut repo_revwalk = get_repo_revwalk(&repo);
     rewrite_repo_history(&repo, &mut repo_revwalk, &mut old_id_to_new, &submodule_dir);
@@ -145,6 +151,67 @@ fn rewrite_submodule_history(repo: &Repository,
             }
             Err(e) => eprintln!("Error walking the submodule's history: {:?}", e),
         }
+    }
+}
+
+fn find_dangling_references_to_submodule<'repo>(repo: &'repo Repository,
+                                                submodule_dir: &str,
+                                                old_id_to_new: &HashMap<Oid, Oid>)
+                                                -> Option<bool> {
+    let submodule_path = std::path::Path::new(submodule_dir);
+
+    let known_submodule_commits: std::collections::HashSet<&Oid> = old_id_to_new.keys().collect();
+    let mut dangling_references = std::collections::HashSet::new();
+
+    let revwalk = get_repo_revwalk(&repo);
+
+    for maybe_oid in revwalk {
+        match maybe_oid {
+            Ok(oid) => {
+                let commit = repo.find_commit(oid)
+                    .expect(&format!("Couldn't get a commit with ID {}", oid));
+                let tree = commit.tree()
+                    .expect(&format!("Couldn't obtain the tree of a commit with ID {}", oid));
+
+                let submodule_subdir = match tree.get_path(submodule_path) {
+                    Ok(tree) => tree,
+                    Err(e) => {
+                        if e.code() == git2::ErrorCode::NotFound &&
+                           e.class() == git2::ErrorClass::Tree {
+                            // It's okay. The tree lacks the subtree corresponding to the
+                            // submodule. In other words, the commit doesn't include the submodule.
+                            // That's totally fine. Let's  move on.
+                            continue;
+                        } else {
+                            // Unexpected error; let's report it and abort the program
+                            panic!("Error getting submodule's subdir from the tree: {:?}", e);
+                        };
+                    }
+                };
+
+                // **INVARIANT**: if we got this far, current commit contains a submodule and
+                // should be rewritten
+
+                let submodule_commit_id = submodule_subdir.id();
+                if !known_submodule_commits.contains(&submodule_commit_id) {
+                    dangling_references.insert(submodule_commit_id);
+                }
+            }
+            Err(e) => eprintln!("Error walking the submodule's history: {:?}", e),
+        }
+    }
+
+    if dangling_references.is_empty() {
+        None
+    } else {
+        // TODO (#16): provide hints as to what options user has to resolve this
+        eprintln!("The repository references the following submodule commits, but they couldn't \
+                   be found in the submodule's history:");
+        for id in dangling_references {
+            eprintln!("{}", id);
+        }
+
+        Some(true)
     }
 }
 
