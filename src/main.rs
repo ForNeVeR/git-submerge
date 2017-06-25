@@ -13,6 +13,7 @@ const E_NO_GIT_REPO: i32 = 1;
 const E_FOUND_DANGLING_REFERENCES: i32 = 2;
 const E_INVALID_COMMIT_ID: i32 = 3;
 const E_INVALID_MAPPINGS: i32 = 4;
+const E_DIRTY_WORKDIR: i32 = 5;
 
 fn main() {
     let exit_code = real_main();
@@ -35,6 +36,11 @@ fn real_main() -> i32 {
             return E_NO_GIT_REPO;
         }
     };
+
+    if !is_workdir_clean(&repo) {
+        eprintln!("The working directory is dirty, aborting!");
+        return E_DIRTY_WORKDIR;
+    }
 
     if !are_mappings_valid(&repo, &submodule_dir, &mappings, &default_mapping) {
         return E_INVALID_MAPPINGS;
@@ -139,6 +145,19 @@ fn parse_cli_arguments(mappings: &mut HashMap<Oid, Oid>) -> Result<(String, Opti
     // We can safely use unwrap() here because the argument is marked as "required" and Clap checks
     // its presence for us.
     Ok((String::from(options.value_of("SUBMODULE_DIR").unwrap()), default_mapping))
+}
+
+fn is_workdir_clean(repo: &Repository) -> bool {
+    let mut statusopts = git2::StatusOptions::new();
+    statusopts.include_untracked(false);
+    statusopts.include_ignored(false);
+    statusopts.include_unmodified(false);
+    statusopts.exclude_submodules(false);
+    statusopts.recurse_untracked_dirs(false);
+    statusopts.recurse_ignored_dirs(false);
+    let statuses = repo.statuses(Some(&mut statusopts))
+        .expect("Couldn't get statuses from the repo");
+    statuses.iter().count() == 0
 }
 
 // Checks if all the values in the `mappings` exist in submodule's history
