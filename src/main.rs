@@ -312,12 +312,12 @@ fn find_dangling_references_to_submodule<'repo>(repo: &'repo Repository,
     } else {
         // TODO (#16): provide hints as to what options user has to resolve this
         eprintln!("The repository references the following submodule commits, but they couldn't \
-                   be found in the submodule's history:");
+                   be found in the submodule's history:\n");
         for id in dangling_references {
             eprintln!("{}", id);
         }
 
-        eprintln!("You can use --mapping and --default-mapping options to make git-submerge \
+        eprintln!("\nYou can use --mapping and --default-mapping options to make git-submerge \
                    replace these commits with some other, still existing, commits.");
 
         Some(true)

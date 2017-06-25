@@ -39,6 +39,64 @@ The following things happened:
 Just as any other kind of history rewriting, this operation changes the hashes
 of the commits, so you shouldn't run it on published histories.
 
+Dealing with dangling references
+================================
+
+It might so happen that `git-submerge` stumbles upon a commit in the main repo
+which references a submodule's commit *which doesn't exist*. The reason this
+happens is that submodule's history has been rewritten sometime after the
+commit to the main repo was made, so now the main repo references something
+that is gone.
+
+Rewriting already published histories is generally frowned upon, precisely due
+to the problem described above, but it still happens. `git-submerge` provides
+you with a couple of flags that you can use to retain as much of your history
+as possible. Let's quickly describe what they are, and then we'll take a look at
+how one can use them.
+
+The first of those options is `--mapping`, accepting two arguments we'll call
+"old commit id" and "new commit id". Whenever `git-submerge` finds a commit in
+the main repo that points to "old commit id" in the submodule, it'll pretend
+that it sees "new commit id" instead, and will go on with its business.
+
+The second option is `--default-mapping`, accepting one argument we'll call
+"default commit id". If `git-submerge` finds a dangling reference which isn't
+mentioned in any of the `--mapping`s, it'll use `--default-mapping`. Simple, eh?
+
+Now, as promised, let's look at an example. Suppose you've run `git-submerge`,
+and it printed out the following:
+
+```
+The repository references the following submodule commits,
+but they couldn't be found in the submodule's history:
+
+aaaabbbbccccddddeeeeffff0000111122223333
+4444555566667777888899990000aaaabbbbcccc
+ddddeeeeffff0000111122223333444455556666
+
+You can use --mapping and --default-mapping options to make
+git-submerge replace these commits with some other, still
+existing, commits.
+```
+
+The best-case scenario for you is that you find a repo that still has these
+commits. You can then look at their metadata (commit message, date etc.) and
+find the corresponding commits in the submodule's new history.
+
+Another, much more cumbersome, option is to find the aforementioned dangling IDs
+in your main repo's history (`git log -S` to the rescue!), then compare with
+your submodule's history and simply *guess* at what new commit IDs you could
+use.
+
+You can then add a few `--mapping`s, and the problem will be resolved.
+
+The worst-case scenario is that you can't find any trace of the old history, and
+guessing didn't help either. In that case, you'll have to create a new commit in
+submodule explaining that some of its history has been lost and you can't
+recover it. Then you can pass that commit's ID to `--default-mapping`, and the
+resulting history will at least have an explanation of why some commits are
+broken.
+
 Building
 ========
 
