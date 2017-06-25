@@ -112,9 +112,16 @@ To check that your build behaves the way the developers expect, do the following
 5. Check the result:
 
     ```console
-    $ diff -ruN /home/user/git-submerge/test/expected.stream \
-        <(git fast-export master)
+    $ git fast-export master > /home/user/git-submerge/test/expected.stream
+    $ cd /home/user/git-submerge/test
+    $ git diff expected.stream
     ```
 
-    If everything went well, `diff` shouldn't find any differences, and there
-    will be no output.
+    If everything went well, `git diff` shouldn't find any differences, and
+    there will be no output.
+
+    Don't forget to clean up afterwards!
+
+    ```console
+    $ git checkout expected.stream
+    ```
