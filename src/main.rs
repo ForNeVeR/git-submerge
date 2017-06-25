@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate clap;
 extern crate git2;
 
@@ -54,7 +55,7 @@ fn real_main() -> i32 {
 fn parse_cli_arguments() -> String {
     let options = clap::App::new("git-submerge")
         .version("0.1")
-        .author("Alexander Batischev <eual.jp@gmail.com>")
+        .author(crate_authors!())
         .about("Merge Git submodule into the main repo as if they've never been separate at all")
         .arg(clap::Arg::with_name("SUBMODULE_DIR")
             .help("The submodule to merge")
