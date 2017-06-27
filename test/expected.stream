@@ -66,27 +66,19 @@ main 2
 from :7
 M 100644 :8 file
 
-blob
-mark :10
-data 44
-[submodule "sub"]
-	path = sub
-	url = ../sub
-
 commit refs/heads/master
-mark :11
+mark :10
 author Alexander Batischev <eual.jp@gmail.com> 1496951606 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951606 +0300
 data 14
 Add submodule
 from :9
 merge :4
-M 100644 :10 .gitmodules
 M 100644 :1 sub/.gitignore
 M 100644 :3 sub/file
 
 blob
-mark :12
+mark :11
 data 160
 Thu Jun  8 22:51:34 MSK 2017
 Thu Jun  8 22:52:11 MSK 2017
@@ -95,16 +87,16 @@ Thu Jun  8 22:52:36 MSK 2017
 e215f8e3b440d0c5052d40fe80921498ca7b7a84  -
 
 commit refs/heads/master
-mark :13
+mark :12
 author Alexander Batischev <eual.jp@gmail.com> 1496951608 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951734 +0300
 data 7
 main 3
-from :11
-M 100644 :12 file
+from :10
+M 100644 :11 file
 
 blob
-mark :14
+mark :13
 data 204
 Thu Jun  8 22:51:34 MSK 2017
 Thu Jun  8 22:52:11 MSK 2017
@@ -114,16 +106,16 @@ e215f8e3b440d0c5052d40fe80921498ca7b7a84  -
 3d39e50118b0bdedff7f419ace4c5e6c27472e16  -
 
 commit refs/heads/master
-mark :15
+mark :14
 author Alexander Batischev <eual.jp@gmail.com> 1496951609 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951771 +0300
 data 7
 main 4
-from :13
-M 100644 :14 file
+from :12
+M 100644 :13 file
 
 blob
-mark :16
+mark :15
 data 248
 Thu Jun  8 22:51:34 MSK 2017
 Thu Jun  8 22:52:11 MSK 2017
@@ -134,16 +126,16 @@ e215f8e3b440d0c5052d40fe80921498ca7b7a84  -
 b550a93a242ae5c1e3622bbfb577addfcf4ac832  -
 
 commit refs/heads/master
-mark :17
+mark :16
 author Alexander Batischev <eual.jp@gmail.com> 1496951614 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951773 +0300
 data 7
 main 5
-from :15
-M 100644 :16 file
+from :14
+M 100644 :15 file
 
 blob
-mark :18
+mark :17
 data 292
 Thu Jun  8 22:51:34 MSK 2017
 Thu Jun  8 22:52:11 MSK 2017
@@ -155,32 +147,32 @@ b550a93a242ae5c1e3622bbfb577addfcf4ac832  -
 76616bc431b7e7f11cc5ec46488b4c7b6092e907  -
 
 commit refs/heads/master
-mark :19
+mark :18
 author Alexander Batischev <eual.jp@gmail.com> 1496951622 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951776 +0300
 data 7
 main 6
-from :17
-M 100644 :18 file
+from :16
+M 100644 :17 file
 
 blob
-mark :20
+mark :19
 data 132
 7630ede3635b192e3884ee9449e64cfcbc40de5e  -
 f08f3535b68e7a545822282ce720c43cbeedef83  -
 98ffff935ecb3449d6019755168eabd020a5eb34  -
 
 commit refs/heads/master
-mark :21
+mark :20
 author Alexander Batischev <eual.jp@gmail.com> 1496951612 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951612 +0300
 data 6
 sub 2
 from :4
-M 100644 :20 sub/file
+M 100644 :19 sub/file
 
 blob
-mark :22
+mark :21
 data 176
 7630ede3635b192e3884ee9449e64cfcbc40de5e  -
 f08f3535b68e7a545822282ce720c43cbeedef83  -
@@ -188,16 +180,16 @@ f08f3535b68e7a545822282ce720c43cbeedef83  -
 18f1fdb2e26562335a9b34c5141c801cc6ad7b82  -
 
 commit refs/heads/master
-mark :23
+mark :22
 author Alexander Batischev <eual.jp@gmail.com> 1496951616 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951616 +0300
 data 6
 sub 3
-from :21
-M 100644 :22 sub/file
+from :20
+M 100644 :21 sub/file
 
 blob
-mark :24
+mark :23
 data 220
 7630ede3635b192e3884ee9449e64cfcbc40de5e  -
 f08f3535b68e7a545822282ce720c43cbeedef83  -
@@ -206,26 +198,26 @@ f08f3535b68e7a545822282ce720c43cbeedef83  -
 3b220213471532817962e0254ca3d3725d77d190  -
 
 commit refs/heads/master
-mark :25
+mark :24
 author Alexander Batischev <eual.jp@gmail.com> 1496951618 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951618 +0300
 data 6
 sub 4
-from :23
-M 100644 :24 sub/file
+from :22
+M 100644 :23 sub/file
 
 commit refs/heads/master
-mark :26
+mark :25
 author Alexander Batischev <eual.jp@gmail.com> 1496951686 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951776 +0300
 data 11
 update sub
-from :19
-merge :25
-M 100644 :24 sub/file
+from :18
+merge :24
+M 100644 :23 sub/file
 
 blob
-mark :27
+mark :26
 data 336
 Thu Jun  8 22:51:34 MSK 2017
 Thu Jun  8 22:52:11 MSK 2017
@@ -238,16 +230,16 @@ b550a93a242ae5c1e3622bbfb577addfcf4ac832  -
 6e0fe1d50da345dabbf7f28f64ffe6aa8cbacc11  -
 
 commit refs/heads/master
-mark :28
+mark :27
 author Alexander Batischev <eual.jp@gmail.com> 1496951690 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951776 +0300
 data 7
 main 7
-from :26
-M 100644 :27 file
+from :25
+M 100644 :26 file
 
 blob
-mark :29
+mark :28
 data 380
 Thu Jun  8 22:51:34 MSK 2017
 Thu Jun  8 22:52:11 MSK 2017
@@ -261,16 +253,16 @@ b550a93a242ae5c1e3622bbfb577addfcf4ac832  -
 057430a73736c0503330cd5ddfcd3153659c47e8  -
 
 commit refs/heads/master
-mark :30
+mark :29
 author Alexander Batischev <eual.jp@gmail.com> 1496951691 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951776 +0300
 data 7
 main 8
-from :28
-M 100644 :29 file
+from :27
+M 100644 :28 file
 
 blob
-mark :31
+mark :30
 data 424
 Thu Jun  8 22:51:34 MSK 2017
 Thu Jun  8 22:52:11 MSK 2017
@@ -285,16 +277,16 @@ b550a93a242ae5c1e3622bbfb577addfcf4ac832  -
 3eee4c4f2f82785bda5865cc2b76a9c70778b087  -
 
 commit refs/heads/master
-mark :32
+mark :31
 author Alexander Batischev <eual.jp@gmail.com> 1496951692 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951776 +0300
 data 7
 main 9
-from :30
-M 100644 :31 file
+from :29
+M 100644 :30 file
 
 blob
-mark :33
+mark :32
 data 264
 7630ede3635b192e3884ee9449e64cfcbc40de5e  -
 f08f3535b68e7a545822282ce720c43cbeedef83  -
@@ -304,16 +296,16 @@ f08f3535b68e7a545822282ce720c43cbeedef83  -
 05c68fc124aba9f55efa5f3c4abd8e31ca746a1b  -
 
 commit refs/heads/master
-mark :34
+mark :33
 author Alexander Batischev <eual.jp@gmail.com> 1496951694 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951694 +0300
 data 6
 sub 5
-from :25
-M 100644 :33 sub/file
+from :24
+M 100644 :32 sub/file
 
 blob
-mark :35
+mark :34
 data 308
 7630ede3635b192e3884ee9449e64cfcbc40de5e  -
 f08f3535b68e7a545822282ce720c43cbeedef83  -
@@ -324,16 +316,16 @@ f08f3535b68e7a545822282ce720c43cbeedef83  -
 0bfde9999c20ac6dc7bfc872631e6179275299ef  -
 
 commit refs/heads/master
-mark :36
+mark :35
 author Alexander Batischev <eual.jp@gmail.com> 1496951704 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951704 +0300
 data 6
 sub 6
-from :34
-M 100644 :35 sub/file
+from :33
+M 100644 :34 sub/file
 
 blob
-mark :37
+mark :36
 data 352
 7630ede3635b192e3884ee9449e64cfcbc40de5e  -
 f08f3535b68e7a545822282ce720c43cbeedef83  -
@@ -345,26 +337,26 @@ f08f3535b68e7a545822282ce720c43cbeedef83  -
 0bfde9999c20ac6dc7bfc872631e6179275299ef  -
 
 commit refs/heads/master
-mark :38
+mark :37
 author Alexander Batischev <eual.jp@gmail.com> 1496951704 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951704 +0300
 data 6
 sub 7
-from :36
-M 100644 :37 sub/file
+from :35
+M 100644 :36 sub/file
 
 commit refs/heads/master
-mark :39
+mark :38
 author Alexander Batischev <eual.jp@gmail.com> 1496951791 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951791 +0300
 data 13
 update sub-2
-from :32
-merge :38
-M 100644 :37 sub/file
+from :31
+merge :37
+M 100644 :36 sub/file
 
 blob
-mark :40
+mark :39
 data 453
 Thu Jun  8 22:51:34 MSK 2017
 Thu Jun  8 22:52:11 MSK 2017
@@ -380,11 +372,11 @@ b550a93a242ae5c1e3622bbfb577addfcf4ac832  -
 Thu Jun  8 22:56:35 MSK 2017
 
 commit refs/heads/master
-mark :41
+mark :40
 author Alexander Batischev <eual.jp@gmail.com> 1496951795 +0300
 committer Alexander Batischev <eual.jp@gmail.com> 1496951795 +0300
 data 8
 main 10
-from :39
-M 100644 :40 file
+from :38
+M 100644 :39 file
 
