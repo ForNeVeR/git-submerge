@@ -4,6 +4,7 @@ extern crate git2;
 
 use git2::{Repository, Commit, Oid, Revwalk, Index};
 use std::collections::{HashMap, HashSet};
+use std::path::Path;
 
 #[macro_use]
 mod macros;
@@ -281,7 +282,7 @@ fn find_dangling_references_to_submodule<'repo>(repo: &'repo Repository,
                                                 mappings: &HashMap<Oid, Oid>,
                                                 default_mapping: &Option<Oid>)
                                                 -> Option<bool> {
-    let submodule_path = std::path::Path::new(submodule_dir);
+    let submodule_path = Path::new(submodule_dir);
 
     let known_submodule_commits: HashSet<&Oid> = old_id_to_new.keys().collect();
     let mut dangling_references = HashSet::new();
@@ -359,7 +360,7 @@ fn rewrite_repo_history(repo: &Repository,
                         default_mapping: &Option<Oid>,
                         submodule_dir: &str) {
     let revwalk = get_repo_revwalk(&repo);
-    let submodule_path = std::path::Path::new(submodule_dir);
+    let submodule_path = Path::new(submodule_dir);
 
     for maybe_oid in revwalk {
         match maybe_oid {
