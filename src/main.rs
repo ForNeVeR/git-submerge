@@ -511,10 +511,15 @@ fn replace_submodule_dir<'repo>(repo: &'repo Repository,
                                 -> Tree<'repo> {
     let mut treebuilder = repo.treebuilder(Some(&tree))
         .expect("Couldn't create TreeBuilder");
+
     treebuilder.remove(submodule_path)
         .expect("Couldn't remove submodule path from TreeBuilder");
     treebuilder.insert(submodule_path, *subtree_id, 0o040000)
         .expect("Couldn't add submodule as a subdir to TreeBuilder");
+
+    treebuilder.remove(".gitmodules")
+        .expect("Couldn't remove .gitmodules from TreeBuilder");
+
     let new_tree_id = treebuilder.write()
         .expect("Couldn't write TreeBuilder into a Tree");
     let new_tree = repo.find_tree(new_tree_id)

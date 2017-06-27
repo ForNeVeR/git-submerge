@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 First public release.
 
 ###Added
-- Merges submodules that reside in the repository's root
+- Merges a single submodule that resides in the repository's root
+- Removes `.gitmodules`
 - User can provide mappings from missing commit IDs to existing ones
 
 
