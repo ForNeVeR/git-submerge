@@ -2,7 +2,7 @@
 extern crate clap;
 extern crate git2;
 
-use git2::{Repository, Commit, Oid, Revwalk, Index};
+use git2::{Repository, Commit, Oid, Revwalk, Index, Tree};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
@@ -413,16 +413,7 @@ fn rewrite_repo_history(repo: &Repository,
                     .and_then(|te| Ok(te.id()))
                     .expect("Couldn't obtain submodule's subtree ID");
 
-                let mut treebuilder = repo.treebuilder(Some(&tree))
-                    .expect("Couldn't create TreeBuilder");
-                treebuilder.remove(submodule_path)
-                    .expect("Couldn't remove submodule path from TreeBuilder");
-                treebuilder.insert(submodule_path, subtree_id, 0o040000)
-                    .expect("Couldn't add submodule as a subdir to TreeBuilder");
-                let new_tree_id = treebuilder.write()
-                    .expect("Couldn't write TreeBuilder into a Tree");
-                let new_tree = repo.find_tree(new_tree_id)
-                    .expect("Couldn't read back the Tree we just wrote");
+                let new_tree = replace_submodule_dir(&repo, &tree, &submodule_path, &subtree_id);
 
                 // In commits that used to update the submodule, add a parent pointing to
                 // appropriate commit in new submodule history
@@ -511,6 +502,25 @@ fn rewrite_repo_history(repo: &Repository,
             Err(e) => eprintln!("Error walking the repo's history: {:?}", e),
         }
     }
+}
+
+fn replace_submodule_dir<'repo>(repo: &'repo Repository,
+                                tree: &Tree,
+                                submodule_path: &Path,
+                                subtree_id: &Oid)
+                                -> Tree<'repo> {
+    let mut treebuilder = repo.treebuilder(Some(&tree))
+        .expect("Couldn't create TreeBuilder");
+    treebuilder.remove(submodule_path)
+        .expect("Couldn't remove submodule path from TreeBuilder");
+    treebuilder.insert(submodule_path, *subtree_id, 0o040000)
+        .expect("Couldn't add submodule as a subdir to TreeBuilder");
+    let new_tree_id = treebuilder.write()
+        .expect("Couldn't write TreeBuilder into a Tree");
+    let new_tree = repo.find_tree(new_tree_id)
+        .expect("Couldn't read back the Tree we just wrote");
+
+    new_tree
 }
 
 fn checkout_rewritten_history(repo: &Repository, old_id_to_new: &HashMap<Oid, Oid>) {
