@@ -348,10 +348,38 @@ fn get_repo_revwalk<'repo>(repo: &'repo Repository) -> Revwalk<'repo> {
     revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
     let head = repo.head().expect("Couldn't obtain repo's HEAD");
     let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
-    // TODO (#6): push all branches and tags, not just HEAD
     revwalk.push(head_id).expect("Couldn't add repo's HEAD to RevWalk list");
 
+    for (name, id) in get_branch_to_id_map(&repo) {
+        revwalk.push(id)
+            .expect(&format!("Couldn't push branch `{}' to RevWalk list", name));
+    }
+
     revwalk
+}
+
+fn get_branch_to_id_map(repo: &Repository) -> HashMap<String, Oid> {
+    let mut result = HashMap::new();
+
+    let branches = repo.branches(Some(git2::BranchType::Local))
+        .expect("Couldn't obtain an iterator over local branches");
+    for maybe_branch in branches {
+        match maybe_branch {
+            Ok((branch, _)) => {
+                let name = branch.name()
+                    .expect("Couldn't get branch' name")
+                    .expect("Branch name is not valid UTF-8");
+                let id = branch.get()
+                    .peel(git2::ObjectType::Commit)
+                    .expect("Couldn't convert branch into a Commit")
+                    .id();
+                result.insert(String::from(name), id);
+            }
+            Err(e) => eprintln!("Error walking the branches: {:?}", e),
+        }
+    }
+
+    result
 }
 
 fn rewrite_repo_history(repo: &Repository,
@@ -502,6 +530,25 @@ fn rewrite_repo_history(repo: &Repository,
             Err(e) => eprintln!("Error walking the repo's history: {:?}", e),
         }
     }
+
+    let branches = repo.branches(Some(git2::BranchType::Local))
+        .expect("Couldn't obtain an iterator over local branches");
+    for maybe_branch in branches {
+        match maybe_branch {
+            Ok((branch, _)) => {
+                let mut reference = branch.into_reference();
+                let id = reference
+                    .peel(git2::ObjectType::Commit)
+                    .expect("Couldn't convert branch into a Commit")
+                    .id();
+                let new_id = old_id_to_new[&id];
+                reference.set_target(
+                    new_id, "git-submerge: moving to rewritten history")
+                    .expect("Couldn't move branch to rewritten history");
+            }
+            Err(e) => eprintln!("Error walking the branches: {:?}", e),
+        }
+    }
 }
 
 fn replace_submodule_dir<'repo>(repo: &'repo Repository,
@@ -534,7 +581,14 @@ fn checkout_rewritten_history(repo: &Repository, old_id_to_new: &HashMap<Oid, Oi
 
     let head = repo.head().expect("Couldn't obtain repo's HEAD");
     let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
-    let updated_id = old_id_to_new[&head_id];
+    let updated_id = match old_id_to_new.get(&head_id) {
+        Some(id) => *id,
+        // If the ID wasn't found, it's okay - it means it's one of the new ones. It means HEAD
+        // was pointing at some branch, and since we've moved the branches at the end of repo's
+        // history rewrite, HEAD doesn't need updating
+        None => head_id,
+    };
+
     let object = repo.find_object(updated_id, None)
         .expect("Couldn't look up an object at which HEAD points");
     repo.reset(&object, git2::ResetType::Hard, Some(&mut checkoutbuilder))
