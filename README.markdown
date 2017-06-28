@@ -186,3 +186,14 @@ To check that your build behaves the way the developers expect, do the following
     ```console
     $ git checkout expected.stream
     ```
+
+Useful tips
+===========
+
+* When viewing the rewritten history with `git log --patch`, add `-m`, `-c` or
+    `--cc` option; they all enable diffs for merge commits (with slightly
+    different presentation—just pick the one you like). The reason this is
+    important is that your original history might have had commits where the
+    submodule is updated *and* some changes are made; now that such commits are
+    turned into merges, Git assumes that file changes were merge conflict
+    resolutions, and hides them from the diffs.
