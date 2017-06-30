@@ -68,6 +68,8 @@ fn real_main() -> i32 {
                          &default_mapping,
                          &submodule_dir);
 
+    remove_dotgit_from_submodule(&submodule_dir);
+
     checkout_rewritten_history(&repo, &old_id_to_new);
 
     E_SUCCESS
@@ -573,6 +575,12 @@ fn replace_submodule_dir<'repo>(repo: &'repo Repository,
         .expect("Couldn't read back the Tree we just wrote");
 
     new_tree
+}
+
+fn remove_dotgit_from_submodule(submodule_dir: &str) {
+    let dotgit_path = String::from(submodule_dir) + "/.git";
+    std::fs::remove_file(&dotgit_path)
+        .expect(&format!("Couldn't remove {}", dotgit_path));
 }
 
 fn checkout_rewritten_history(repo: &Repository, old_id_to_new: &HashMap<Oid, Oid>) {
