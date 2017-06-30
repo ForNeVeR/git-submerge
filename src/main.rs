@@ -546,13 +546,11 @@ fn rewrite_repo_history(repo: &Repository,
         match maybe_branch {
             Ok((branch, _)) => {
                 let mut reference = branch.into_reference();
-                let id = reference
-                    .peel(git2::ObjectType::Commit)
+                let id = reference.peel(git2::ObjectType::Commit)
                     .expect("Couldn't convert branch into a Commit")
                     .id();
                 let new_id = old_id_to_new[&id];
-                reference.set_target(
-                    new_id, "git-submerge: moving to rewritten history")
+                reference.set_target(new_id, "git-submerge: moving to rewritten history")
                     .expect("Couldn't move branch to rewritten history");
             }
             Err(e) => eprintln!("Error walking the branches: {:?}", e),
@@ -586,14 +584,12 @@ fn replace_submodule_dir<'repo>(repo: &'repo Repository,
 
 fn remove_dotgit_from_submodule(submodule_dir: &str) {
     let dotgit_path = String::from(submodule_dir) + "/.git";
-    std::fs::remove_file(&dotgit_path)
-        .expect(&format!("Couldn't remove {}", dotgit_path));
+    std::fs::remove_file(&dotgit_path).expect(&format!("Couldn't remove {}", dotgit_path));
 }
 
 fn remove_gitmodules() {
     let gitmodules_path = ".gitmodules";
-    std::fs::remove_file(&gitmodules_path)
-        .expect("Couldn't remove .gitmodules");
+    std::fs::remove_file(&gitmodules_path).expect("Couldn't remove .gitmodules");
 }
 
 fn update_index(repo: &Repository, old_id_to_new: &HashMap<Oid, Oid>) {
