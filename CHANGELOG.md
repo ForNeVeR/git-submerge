@@ -16,7 +16,6 @@ First public release.
 - Removes `.gitmodules`
 - User can provide mappings from missing commit IDs to existing ones
 - Migrates all the branches to the rewritten history
-- Often fails to do the checkout at the end; just do `git reset --hard`.
 
 
 

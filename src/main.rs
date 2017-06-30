@@ -68,10 +68,16 @@ fn real_main() -> i32 {
                          &default_mapping,
                          &submodule_dir);
 
+    // Working directories with and without submodules are pretty much
+    // the same, save for two files:
+    // - submodules have .git in their root directory;
+    // - there's .gitmodules in the root of the repo.
     remove_dotgit_from_submodule(&submodule_dir);
     remove_gitmodules();
-
-    checkout_rewritten_history(&repo, &old_id_to_new);
+    // Git used to think of submodule's directory as a file, because it was
+    // "opaque". We have to update the index in order for Git to realise
+    // that the submodule directory is *just* a directory now.
+    update_index(&repo, &old_id_to_new);
 
     E_SUCCESS
 }
@@ -590,10 +596,7 @@ fn remove_gitmodules() {
         .expect("Couldn't remove .gitmodules");
 }
 
-fn checkout_rewritten_history(repo: &Repository, old_id_to_new: &HashMap<Oid, Oid>) {
-    let mut checkoutbuilder = git2::build::CheckoutBuilder::new();
-    checkoutbuilder.force();
-
+fn update_index(repo: &Repository, old_id_to_new: &HashMap<Oid, Oid>) {
     let head = repo.head().expect("Couldn't obtain repo's HEAD");
     let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
     let updated_id = match old_id_to_new.get(&head_id) {
@@ -603,9 +606,14 @@ fn checkout_rewritten_history(repo: &Repository, old_id_to_new: &HashMap<Oid, Oi
         // history rewrite, HEAD doesn't need updating
         None => head_id,
     };
-
-    let object = repo.find_object(updated_id, None)
-        .expect("Couldn't look up an object at which HEAD points");
-    repo.reset(&object, git2::ResetType::Hard, Some(&mut checkoutbuilder))
-        .expect("Couldn't run force-reset");
+    let commit = repo.find_commit(updated_id)
+        .expect("Coudln't get the commit HEAD points at");
+    let tree = commit.tree()
+        .expect("Couldn't obtain commit's tree");
+    let mut index = repo.index()
+        .expect("Couldn't obtain repo's index");
+    index.read_tree(&tree)
+        .expect("Couldn't populate the index with a tree");
+    index.write()
+        .expect("Couldn't write the index back to the repo");
 }
