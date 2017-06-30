@@ -214,7 +214,7 @@ fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_dir: &str) ->
     // need it to contain.
     revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
     // TODO (#6): push all branches and tags, not just HEAD
-    revwalk.push(submodule_head).expect("Couldn't add submodule's HEAD to RevWalk list");
+    revwalk.push(submodule_head).expect("Couldn't add submodule's HEAD to RevWalk");
 
     revwalk
 }
@@ -357,11 +357,11 @@ fn get_repo_revwalk<'repo>(repo: &'repo Repository) -> Revwalk<'repo> {
     revwalk.set_sorting(git2::SORT_REVERSE | git2::SORT_TOPOLOGICAL);
     let head = repo.head().expect("Couldn't obtain repo's HEAD");
     let head_id = head.target().expect("Couldn't resolve repo's HEAD to a commit ID");
-    revwalk.push(head_id).expect("Couldn't add repo's HEAD to RevWalk list");
+    revwalk.push(head_id).expect("Couldn't add repo's HEAD to RevWalk");
 
     for (name, id) in get_branch_to_id_map(&repo) {
         revwalk.push(id)
-            .expect(&format!("Couldn't push branch `{}' to RevWalk list", name));
+            .expect(&format!("Couldn't push branch `{}' to RevWalk", name));
     }
 
     revwalk
@@ -444,7 +444,8 @@ fn rewrite_repo_history(repo: &Repository,
                     }
                 };
                 let submodule_commit = repo.find_commit(new_submodule_commit_id)
-                    .expect("Couldn't obtain submodule's commit");
+                    .expect(&format!("Couldn't obtain submodule's commit with ID {}",
+                                     new_submodule_commit_id));
                 let subtree_id = submodule_commit.tree()
                     .and_then(|t| t.get_path(submodule_path))
                     .and_then(|te| Ok(te.id()))
