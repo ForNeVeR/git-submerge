@@ -16,6 +16,7 @@ const E_INVALID_COMMIT_ID: i32 = 3;
 const E_INVALID_MAPPINGS: i32 = 4;
 const E_DIRTY_WORKDIR: i32 = 5;
 const E_SUBMODULE_FETCH_FAILED: i32 = 6;
+const E_SUBMODULE_NOT_FOUND: i32 = 7;
 
 fn main() {
     let exit_code = real_main();
@@ -42,6 +43,11 @@ fn real_main() -> i32 {
     if !is_workdir_clean(&repo) {
         eprintln!("The working directory is dirty, aborting!");
         return E_DIRTY_WORKDIR;
+    }
+
+    if !does_submodule_exist(&repo, &submodule_dir) {
+        eprintln!("Couldn't find a submodule named `{}'", submodule_dir);
+        return E_SUBMODULE_NOT_FOUND;
     }
 
     if !are_mappings_valid(&repo, &submodule_dir, &mappings, &default_mapping) {
@@ -174,6 +180,10 @@ fn is_workdir_clean(repo: &Repository) -> bool {
     let statuses = repo.statuses(Some(&mut statusopts))
         .expect("Couldn't get statuses from the repo");
     statuses.iter().count() == 0
+}
+
+fn does_submodule_exist(repo: &Repository, submodule_dir: &str) -> bool {
+    repo.find_submodule(submodule_dir).is_ok()
 }
 
 // Checks if all the values in the `mappings` exist in submodule's history
