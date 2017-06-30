@@ -69,6 +69,7 @@ fn real_main() -> i32 {
                          &submodule_dir);
 
     remove_dotgit_from_submodule(&submodule_dir);
+    remove_gitmodules();
 
     checkout_rewritten_history(&repo, &old_id_to_new);
 
@@ -581,6 +582,12 @@ fn remove_dotgit_from_submodule(submodule_dir: &str) {
     let dotgit_path = String::from(submodule_dir) + "/.git";
     std::fs::remove_file(&dotgit_path)
         .expect(&format!("Couldn't remove {}", dotgit_path));
+}
+
+fn remove_gitmodules() {
+    let gitmodules_path = ".gitmodules";
+    std::fs::remove_file(&gitmodules_path)
+        .expect("Couldn't remove .gitmodules");
 }
 
 fn checkout_rewritten_history(repo: &Repository, old_id_to_new: &HashMap<Oid, Oid>) {
