@@ -15,6 +15,7 @@ const E_FOUND_DANGLING_REFERENCES: i32 = 2;
 const E_INVALID_COMMIT_ID: i32 = 3;
 const E_INVALID_MAPPINGS: i32 = 4;
 const E_DIRTY_WORKDIR: i32 = 5;
+const E_SUBMODULE_FETCH_FAILED: i32 = 6;
 
 fn main() {
     let exit_code = real_main();
@@ -50,6 +51,11 @@ fn real_main() -> i32 {
     println!("Merging {}...", submodule_dir);
 
     let mut old_id_to_new = HashMap::new();
+
+    match fetch_submodule_history(&repo, &submodule_dir) {
+        Ok(_) => {}
+        Err(_) => return E_SUBMODULE_FETCH_FAILED,
+    }
 
     rewrite_submodule_history(&repo, &mut old_id_to_new, &submodule_dir);
 
@@ -199,10 +205,6 @@ fn are_mappings_valid(repo: &Repository,
 }
 
 fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_dir: &str) -> Revwalk<'repo> {
-    let submodule_url = String::from("./") + submodule_dir;
-    let mut remote = repo.remote_anonymous(&submodule_url)
-        .expect("Couldn't create an anonymous remote");
-    remote.fetch(&[], None, None).expect("Couldn't fetch submodule's history");
     let submodule = repo.find_submodule(submodule_dir)
         .expect("Couldn't find the submodule with expected path");
     let submodule_head = submodule.head_id()
@@ -217,6 +219,20 @@ fn get_submodule_revwalk<'repo>(repo: &'repo Repository, submodule_dir: &str) ->
     revwalk.push(submodule_head).expect("Couldn't add submodule's HEAD to RevWalk");
 
     revwalk
+}
+
+fn fetch_submodule_history(repo: &Repository, submodule_dir: &str) -> Result<(), ()> {
+    let submodule_url = String::from("./") + submodule_dir;
+    let mut remote = repo.remote_anonymous(&submodule_url)
+        .expect("Couldn't create an anonymous remote");
+    match remote.fetch(&[], None, None) {
+        Ok(_) => Ok(()),
+        Err(_) => {
+            eprintln!("Couldn't fetch submodule's history!  Have you forgot to run \
+                       `git submodule update --recursive`?");
+            Err(())
+        }
+    }
 }
 
 fn rewrite_submodule_history(repo: &Repository,
