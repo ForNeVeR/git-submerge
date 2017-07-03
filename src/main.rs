@@ -96,7 +96,7 @@ fn real_main() -> i32 {
 
 fn parse_cli_arguments(mappings: &mut HashMap<Oid, Oid>) -> Result<(String, Option<Oid>), i32> {
     let options = clap::App::new("git-submerge")
-        .version("0.1")
+        .version("0.5")
         .author(crate_authors!())
         .about("Merge Git submodule into the main repo as if they've never been separate at all")
         .arg(clap::Arg::with_name("SUBMODULE_DIR")
