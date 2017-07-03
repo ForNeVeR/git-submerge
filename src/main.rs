@@ -333,7 +333,13 @@ fn find_dangling_references_to_submodule<'repo>(repo: &'repo Repository,
                     .expect(&format!("Couldn't obtain the tree of a commit with ID {}", oid));
 
                 let submodule_subdir = match tree.get_path(submodule_path) {
-                    Ok(tree) => tree,
+                    Ok(tree) => {
+                        // We're only interested in gitlinks
+                        if tree.filemode() != 0o160000 {
+                            continue;
+                        }
+                        tree
+                    },
                     Err(e) => {
                         if e.code() == git2::ErrorCode::NotFound &&
                            e.class() == git2::ErrorClass::Tree {
@@ -434,7 +440,13 @@ fn rewrite_repo_history(repo: &Repository,
                     .expect(&format!("Couldn't obtain the tree of a commit with ID {}", oid));
 
                 let submodule_subdir = match tree.get_path(submodule_path) {
-                    Ok(tree) => tree,
+                    Ok(tree) => {
+                        // We're only interested in gitlinks
+                        if tree.filemode() != 0o160000 {
+                            continue;
+                        };
+                        tree
+                    },
                     Err(e) => {
                         if e.code() == git2::ErrorCode::NotFound &&
                            e.class() == git2::ErrorClass::Tree {
