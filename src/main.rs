@@ -50,6 +50,11 @@ fn real_main() -> i32 {
         return E_SUBMODULE_NOT_FOUND;
     }
 
+    match fetch_submodule_history(&repo, &submodule_dir) {
+        Ok(_) => {}
+        Err(_) => return E_SUBMODULE_FETCH_FAILED,
+    }
+
     if !are_mappings_valid(&repo, &submodule_dir, &mappings, &default_mapping) {
         return E_INVALID_MAPPINGS;
     }
@@ -57,11 +62,6 @@ fn real_main() -> i32 {
     println!("Merging {}...", submodule_dir);
 
     let mut old_id_to_new = HashMap::new();
-
-    match fetch_submodule_history(&repo, &submodule_dir) {
-        Ok(_) => {}
-        Err(_) => return E_SUBMODULE_FETCH_FAILED,
-    }
 
     rewrite_submodule_history(&repo, &mut old_id_to_new, &submodule_dir);
 
