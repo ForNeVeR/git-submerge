@@ -1,3 +1,6 @@
+**DISCONTINUED!** I found [a simpler approach](https://blog.debiania.in.ua/posts/2017-07-06-pulling-submodule-s-history-into-the-main-repository.html) and decided to abandon this project.
+======
+
 git-submerge [![Travis build status][travis-badge]][travis-build] [![Appveyor build status][appveyor-badge]][appveyor-build] [![Andivionian status umbra][andivionian-status-badge]][andivionian-status-link]
 ============
 
