@@ -1,6 +1,3 @@
-**DISCONTINUED!** I found [a simpler approach](https://blog.debiania.in.ua/posts/2017-07-06-pulling-submodule-s-history-into-the-main-repository.html) and decided to abandon this project.
-======
-
 git-submerge [![Travis build status][travis-badge]][travis-build] [![Appveyor build status][appveyor-badge]][appveyor-build] [![Andivionian status umbra][andivionian-status-badge]][andivionian-status-link]
 ============
 
@@ -44,6 +41,9 @@ changes the hashes of the commits, so you shouldn't run it on published
 histories. Furthermore, beware of bugs! Run this on a fresh clone of your
 repository, and never delete the old history until you're reasonably sure that
 the new one is what you expect it to be.
+
+Before using git-submerge, it's recommended to take a look at [a simpler
+approach](https://blog.debiania.in.ua/posts/2017-07-06-pulling-submodule-s-history-into-the-main-repository.html).
 
 Dealing with dangling references
 ================================
