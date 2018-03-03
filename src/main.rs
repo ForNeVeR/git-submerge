@@ -2,7 +2,8 @@
 extern crate clap;
 extern crate git2;
 
-use git2::{Repository, Commit, Oid, Revwalk, Index, Tree};
+use git2::{Config, Repository, Commit, Oid, Revwalk, Index, Tree};
+use std::fs;
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
@@ -85,7 +86,8 @@ fn real_main() -> i32 {
     // - submodules have .git in their root directory;
     // - there's .gitmodules in the root of the repo.
     remove_dotgit_from_submodule(&submodule_dir);
-    remove_gitmodules();
+    remove_from_gitmodules(&submodule_dir);
+    gitmodules_cleanup();
     // Git used to think of submodule's directory as a file, because it was
     // "opaque". We have to update the index in order for Git to realise
     // that the submodule directory is *just* a directory now.
@@ -626,9 +628,53 @@ fn remove_dotgit_from_submodule(submodule_dir: &str) {
     std::fs::remove_file(&dotgit_path).expect(&format!("Couldn't remove {}", dotgit_path));
 }
 
-fn remove_gitmodules() {
+fn remove_from_gitmodules(submodule_dir: &str) {
     let gitmodules_path = ".gitmodules";
-    std::fs::remove_file(&gitmodules_path).expect("Couldn't remove .gitmodules");
+    let config_section = format!("submodule.{}", submodule_dir);
+    println!(
+        "Removing {} section from from the configuration file {}",
+        submodule_dir,
+        gitmodules_path);
+
+    let config_path = format!("{}.path", config_section);
+    let config_url = format!("{}.url", config_section);
+    let mut config = Config::open(Path::new(gitmodules_path))
+        .expect(&format!("Cannot load config file from {}", gitmodules_path));
+    config.remove(&config_path)
+        .expect(&format!("Cannot remove {} value from file {}", config_path, gitmodules_path));
+    config.remove(&config_url)
+        .expect(&format!("Cannot remove {} value from file {}", config_url, gitmodules_path));
+}
+
+fn gitmodules_cleanup() {
+    let gitmodules_path = ".gitmodules";
+    let new_path = ".gitmodules.new";
+    let entry_exists = {
+        println!("Recreating .gitmodules in file {}", new_path);
+
+        let old_config = Config::open(Path::new(gitmodules_path))
+            .expect(&format!("Cannot load config file from {}", gitmodules_path));
+        let mut new_config = Config::open(Path::new(new_path))
+            .expect(&format!("Cannot load config file from {}", new_path));
+        let entries = old_config.entries(None)
+            .expect("Cannot get config file entries");
+        entries.for_each(|entry| {
+            let entry = entry.unwrap();
+            new_config.set_str(entry.name().unwrap(), entry.value().unwrap())
+                .expect(&format!("Cannot add entry to config file {}", new_path));
+        });
+        let new_items = new_config.entries(None).unwrap();
+        new_items.count() > 0
+    };
+
+    if entry_exists {
+        println!("Renaming {} into {}", gitmodules_path, new_path);
+        fs::rename(Path::new(new_path), Path::new(gitmodules_path))
+            .expect(&format!("Cannot rename {} to {}", new_path, gitmodules_path))
+    } else {
+        println!("No entries. Removing {}", gitmodules_path);
+        fs::remove_file(Path::new(gitmodules_path)).unwrap()
+    }
 }
 
 fn update_index(repo: &Repository, old_id_to_new: &HashMap<Oid, Oid>) {
